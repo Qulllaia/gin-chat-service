@@ -23,7 +23,7 @@ func WebsocketsInit(context *gin.Context) {
 	chat_id, _ := context.GetQuery("chat_id")
 	chat_id_conns[chat_id] = append(chat_id_conns[chat_id], conn);
 	if err != nil {
-		println("Error Connection", err)
+		println("Error Connection", err.Error())
 		return;
 	}
 	
@@ -34,7 +34,7 @@ func WebsocketsInit(context *gin.Context) {
 		messageType, message, err := conn.ReadMessage();
 
 		if err != nil {
-			println("Error Message", err);
+			println("Error Message", err.Error());
 			break;
 		}
 
@@ -49,8 +49,7 @@ func WebsocketsInit(context *gin.Context) {
 				}
 		
 				if err != nil {
-					println(err);
-					break;
+					println("Send Error", err.Error(), len(getter_conns));
 				}
 			}
 		}
