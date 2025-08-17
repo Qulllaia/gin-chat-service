@@ -1,11 +1,26 @@
 package user_controller
 
-import "github.com/gin-gonic/gin"
+import (
+	"main/database/queries"
 
-type UserController struct{};
+	"github.com/gin-gonic/gin"
+)
+
+type UserController struct{
+	UQ *queries.UserQuery
+};
 
 func (uc *UserController) CreateUser(context *gin.Context) {
-	context.JSON(200, gin.H{
-		"done": true,
-	})
+
+	err := uc.UQ.InsertUser("lol", "kek");
+	if err != nil {
+		context.JSON(400, gin.H{
+			"error": "createUserException",
+			"message": err.Error(),
+		})
+	} else {
+		context.JSON(200, gin.H{
+			"done": true,
+		})
+	}
 }

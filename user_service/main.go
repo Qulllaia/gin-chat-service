@@ -2,6 +2,8 @@ package main
 
 import (
 	"main/controller"
+	"main/database"
+	"main/database/queries"
 	"main/router"
 
 	"github.com/gin-gonic/gin"
@@ -10,7 +12,9 @@ import (
 func main() {
 	app := gin.Default()
 
-	controller := controller.NewController();
+	db := database.CreateConnection();
+	uq := queries.UserQueryConstructor(db);
+	controller := controller.NewController(uq);
 
 	newRouter := router.NewRouter(app);
 
