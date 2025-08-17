@@ -1,7 +1,8 @@
 package main
 
 import (
-	"main/websockets"
+	"main/controller"
+	"main/router"
 
 	"github.com/gin-gonic/gin"
 )
@@ -9,7 +10,9 @@ import (
 func main() {
 	app := gin.Default();
 
-	app.GET("/ws", websockets.WebsocketsInit)
+	controllerChat := controller.NewController();
+	routerChat := router.NewRouter(app);
+	routerChat.RegisterRouters(controllerChat);
 
 	app.Run(":5050");
 }
