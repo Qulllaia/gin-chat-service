@@ -11,10 +11,10 @@ type Controller struct {
 	User user_controller.UserController;
 }
 
-func NewController(uq *queries.UserQuery) *Controller{
+func NewController(uq *queries.UserQuery, aq *queries.AuthQuery) *Controller{
 
 	return &Controller{
-		Auth: auth_controller.AuthController{},
+		Auth: auth_controller.AuthController{AQ: aq, UQ: uq},
 		User: user_controller.UserController{UQ: uq},
 	};
 }

@@ -17,7 +17,7 @@ func NewAuth(router *gin.RouterGroup) *Auth {
 func (a *Auth) AuthRoutes(controller *controller.Controller) {
 	api := a.AuthRouter.Group("auth")
 	{
-		api.GET("/reg", controller.Auth.CreateUser)
-		api.GET("/login")
+		api.POST("/reg", controller.Auth.RegisterUser)
+		api.POST("/login", controller.Auth.LoginUser)
 	}
 }

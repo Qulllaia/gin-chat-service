@@ -14,7 +14,8 @@ func main() {
 
 	db := database.CreateConnection();
 	uq := queries.UserQueryConstructor(db);
-	controller := controller.NewController(uq);
+	aq := queries.AuthQueryConstructor(db);
+	controller := controller.NewController(uq, aq);
 
 	newRouter := router.NewRouter(app);
 

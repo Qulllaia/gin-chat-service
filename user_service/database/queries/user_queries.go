@@ -1,6 +1,9 @@
 package queries
 
-import "main/database"
+import (
+	"main/database"
+	. "main/database/models"
+)
 
 type UserQuery struct {
 	*database.Database
@@ -13,4 +16,61 @@ func UserQueryConstructor(db *database.Database) *UserQuery {
 func (uq *UserQuery) InsertUser(name string, password string) error {
 	_, err := uq.DB.Exec(`INSERT INTO "user" (name, password) VALUES ($1, $2)`, name, password);
 	return err; 
+}
+
+func (uq *UserQuery) GetUserByID(id int) (*User, error) {
+    var user User
+    err := uq.DB.QueryRow(`
+        SELECT id, name, password 
+        FROM "user" 
+        WHERE id = $1
+    `, id).Scan(&user.ID, &user.Name, &user.Password)
+    
+    if err != nil {
+        return nil, err
+    }
+    return &user, nil
+}
+
+func (uq *UserQuery) GetAllUsers() ([]User, error) {
+    rows, err := uq.DB.Query(`
+        SELECT id, name, password 
+        FROM "user"
+    `)
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+
+    var users []User
+    for rows.Next() {
+        var user User
+        if err := rows.Scan(&user.ID, &user.Name, &user.Password); err != nil {
+            return nil, err
+        }
+        users = append(users, user)
+    }
+    
+    if err = rows.Err(); err != nil {
+        return nil, err
+    }
+    
+    return users, nil
+}
+
+func (uq *UserQuery) UpdateUser(id int, name, password string) error {
+    _, err := uq.DB.Exec(`
+        UPDATE "user" 
+        SET name = $1, password = $2 
+        WHERE id = $3
+    `, name, password, id)
+    return err
+}
+
+func (uq *UserQuery) DeleteUser(id int) error {
+    _, err := uq.DB.Exec(`
+        DELETE FROM "user" 
+        WHERE id = $1
+    `, id)
+    return err
 }
