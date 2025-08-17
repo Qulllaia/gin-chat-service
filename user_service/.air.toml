@@ -1,0 +1,8 @@
+root = "."  # Корневая директория проекта
+tmp_dir = "tmp"  # Директория для временных файлов
+
+[build]
+cmd = "go build -o ." 
+bin = "./main"  
+include_ext = ["go"]  
+exclude_dir = ["assets", "vendor", "tmp"]  
