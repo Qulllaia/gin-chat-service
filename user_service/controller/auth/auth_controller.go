@@ -40,7 +40,7 @@ func (ac *AuthController) LoginUser(context *gin.Context) {
 		return
 	}
 
-	jwtToken, err := utils.GenerateJWT(userDTO.ID, userDTO.Name);
+	jwtToken, err := utils.GenerateJWT(int64(user.ID), userDTO.Name);
 
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{
@@ -88,7 +88,7 @@ func (ac *AuthController) RegisterUser(context *gin.Context) {
 		})
 	}
 
-	err = ac.UQ.InsertUser(userDTO.Name, hasedPassword);
+	id, err := ac.UQ.InsertUser(userDTO.Name, hasedPassword);
 
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{
@@ -97,7 +97,7 @@ func (ac *AuthController) RegisterUser(context *gin.Context) {
 		})
 	}
 
-	jwtToken, err := utils.GenerateJWT(userDTO.ID, userDTO.Name);
+	jwtToken, err := utils.GenerateJWT(id, userDTO.Name);
 
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{

@@ -9,14 +9,14 @@ import (
 )
 
 type Claims struct {
-	UserID int `json:"id"`
+	UserID int64 `json:"id"`
 	Name string `json:"name"`
 	jwt.RegisteredClaims
 }
 
-func GenerateJWT(userID int, name string) (string, error) {
+func GenerateJWT(userID int64, name string) (string, error) {
 	expirationTime := time.Now().Add(24 * time.Hour)
-	
+	println(userID)
 	claims := &Claims{
 		UserID: userID,
 		Name: name,

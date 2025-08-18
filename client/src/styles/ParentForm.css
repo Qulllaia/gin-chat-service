@@ -1,0 +1,112 @@
+* {
+    font-family: "Cascadia Code";
+}
+
+.background {
+    position: fixed;
+    background-color: rgba(255, 255, 255, 0.5);
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+    opacity: 1;
+    animation: fadeIn 0.3s forwards;
+}
+
+.content {
+    background: linear-gradient(45deg, #7a00ff, #ff00c8);;
+    width: 64rem;
+    height: fit-content;
+    position: absolute;
+    z-index: 1000;
+    padding: 2rem;
+    border-radius: 20px;
+}
+
+.svg-cross {
+    position: absolute;
+    right: 0;
+    top: 0;
+    transform: translate(-50%, 0%);
+
+    cursor: pointer;
+    transition: stroke 0.3s;
+}
+
+.svg-cross line {
+    transition: stroke 0.3s;
+}
+
+.svg-cross:hover line {
+    stroke: red;
+}
+
+p{
+    font-size: 3rem;
+}
+
+input {
+    width: 50%;
+    font-size: 2rem;
+    outline: none;
+    border-color: transparent;
+    border-radius: 10px;
+    background-color: #ffffff89;
+    color: rgb(0, 0, 0);
+    margin: 1rem;
+}
+
+button {
+    background-color: #ffffff89;
+    border-radius: 10px;
+    color: rgb(0, 0, 0);
+    outline: none;
+    border-color: transparent;
+    margin: 1rem;
+    padding: 0.5rem;
+    font-size: 1.5rem;
+}
+
+button:hover {
+    background: linear-gradient(
+        90deg,
+        #ffffff89 0%,
+        #ffffffb2 50%,
+        #ffffff89 100%
+    ), #ffffff53;
+    background-size: 200% 100%;
+    animation: shine 3s linear infinite;
+}
+
+@keyframes shine {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+.loader {
+    width: 48px;
+    height: 48px;
+    border: 5px solid #FFF;
+    border-bottom-color: transparent;
+    border-radius: 50%;
+    display: inline-block;
+    box-sizing: border-box;
+    animation: rotation 1s linear infinite;
+    position: absolute;
+    top: 45%;
+    left: 50%;
+    transform: translate(-50%, -50%); 
+    font-size: 20px;
+}
+
+.sub-text {
+    font-size: 1.5rem;
+}

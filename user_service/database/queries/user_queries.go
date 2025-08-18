@@ -13,9 +13,10 @@ func UserQueryConstructor(db *database.Database) *UserQuery {
 	return &UserQuery{db}
 }
 
-func (uq *UserQuery) InsertUser(name string, password string) error {
-	_, err := uq.DB.Exec(`INSERT INTO "user" (name, password) VALUES ($1, $2)`, name, password);
-	return err; 
+func (uq *UserQuery) InsertUser(name string, password string) (int64, error) {
+    var id int64;
+	err := uq.DB.QueryRow(`INSERT INTO "user" (name, password) VALUES ($1, $2) RETURNING id`, name, password).Scan(&id);
+	return id, err; 
 }
 
 func (uq *UserQuery) GetUserByID(id int) (*User, error) {

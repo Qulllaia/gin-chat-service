@@ -2,14 +2,15 @@ import { useEffect, useRef, useState } from 'react';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
 import { Message } from '../types';
+import FriendsList from './FriendsList';
 
 export function Chat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const ws = useRef<WebSocket>(null);
 
-  useEffect(() => {
+  useEffect(() => { 
       if (!ws.current) {
-        ws.current = new WebSocket('ws://localhost:5050/ws?user_id=fslkfjslkfjslfs&chat_id=1');
+        ws.current = new WebSocket('ws://localhost:5050/api/chat/ws?user_id=fslkfjslkfjslfs&chat_id=1');
 
       }
       console.log('useeffect')
@@ -58,10 +59,13 @@ export function Chat() {
   };
 
   return (
-    <div className="chat-container">
-      <h1>Минималистичный Чат</h1>
-      <MessageList messages={messages} />
-      <MessageInput onSend={sendMessage} />
+    <div className='chat-body'>
+      <FriendsList/>
+      <div className="chat-container">
+        <h1>Минималистичный Чат</h1>
+        <MessageList messages={messages} />
+        <MessageInput onSend={sendMessage} />
+      </div>
     </div>
   );
 }
