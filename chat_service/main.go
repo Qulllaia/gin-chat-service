@@ -2,6 +2,7 @@ package main
 
 import (
 	"main/controller"
+	"main/database"
 	"main/router"
 
 	"github.com/gin-gonic/gin"
@@ -10,7 +11,9 @@ import (
 func main() {
 	app := gin.Default();
 
-	controllerChat := controller.NewController();
+	db := database.CreateConnection();
+
+	controllerChat := controller.NewController(db);
 	routerChat := router.NewRouter(app);
 	routerChat.RegisterRouters(controllerChat);
 

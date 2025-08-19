@@ -2,7 +2,9 @@ package websockets
 
 import (
 	"main/controller/utils"
+	"main/database"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -21,9 +23,13 @@ type UserWSData struct {
 	ws *websocket.Conn
 }
 
+type WSConnection struct {
+	DB *database.Database
+}
+
 var chat_id_conns = map[string][]UserWSData{} 
 
-func WebsocketsInit(context *gin.Context) {
+func (ws *WSConnection) WebsocketsInit(context *gin.Context) {
 	conn, err := upgrader.Upgrade(context.Writer, context.Request, nil);
 
 	if err != nil {
@@ -72,7 +78,11 @@ func WebsocketsInit(context *gin.Context) {
 			for _, getter_conn := range getter_conns {
 				if getter_conn.ws != conn {
 					err  = getter_conn.ws.WriteMessage(messageType, message);
-					println(chat_id, getter_conn.user_id)
+				} else {
+					_, err := ws.DB.DB.Exec(`INSERT INTO "ChatHistory" (message, chat_id, user_id, timestamp) VALUES($1,$2,$3, $4)`, string(message), chat_id, getter_conn.user_id, time.Now());
+					if(err != nil) {
+						println(err.Error());
+					}
 				}
 		
 				if err != nil {

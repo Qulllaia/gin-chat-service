@@ -21,7 +21,7 @@ func (uc *UserController) CreateUser(context *gin.Context) {
 		return
 	} 
 
-	err := uc.UQ.InsertUser(user.Name, user.Password);
+	_, err := uc.UQ.InsertUser(user.Name, user.Password);
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{
 			"error": "createUserException",
