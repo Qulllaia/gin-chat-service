@@ -3,11 +3,12 @@ import MessageComponent from './Message';
 
 interface MessageListProps {
   messages: Message[];
+  ref: React.RefObject<HTMLDivElement | null>
 }
 
-export default function MessageList({ messages }: MessageListProps) {
+export default function MessageList({ messages, ref }: MessageListProps) {
   return (
-    <div className="message-list">
+    <div ref={ref} className="message-list">
       {messages.map((message) => (
         <MessageComponent key={message.id} message={message} />
       ))}

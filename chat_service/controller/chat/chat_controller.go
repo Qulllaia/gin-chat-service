@@ -1,47 +1,47 @@
 package chat_controller
 
 import (
-	"main/database"
-	. "main/database/models"
+	"main/controller/utils"
+	"main/database/queries"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
 type ChatController struct {
-	DB *database.Database
+	CQ *queries.ChatQueries
 }
 
 func (cc *ChatController) GetHistoryList(context *gin.Context) {
-    rows, err := cc.DB.DB.Query(`
-        SELECT id, message, chat_id, user_id, "timestamp"
-        FROM "ChatHistory"  ORDER BY "timestamp" DESC
-    `)
-    if err != nil {
-		context.JSON(http.StatusOK, gin.H{
-			"done": false,
-			"result": err.Error(),
-		})
-    }
-    defer rows.Close()
 
-    var messages []Message
-    for rows.Next() {
-        var message Message
-        if err := rows.Scan(&message.Id, &message.Message, &message.Chat_id, &message.User_id, &message.Timestamp); err != nil {
-			context.JSON(http.StatusOK, gin.H{
-				"done": false,
-				"result": err.Error(),
-			})
-        }
-        messages = append(messages, message)
-    }
-    
-    if err = rows.Err(); err != nil {
-		context.JSON(http.StatusOK, gin.H{
+	cookie := context.Request.Cookies();
+
+	jwt_token := "";
+
+	for _, val := range cookie {
+		if val.Name == "session_token" {
+			jwt_token = val.Value;
+		}
+	}
+
+	claims, err := utils.DecodeJWT(jwt_token);
+
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{
 			"done": false,
-			"result": err.Error(),
+			"message": err.Error(),
 		})
+		return;
+	}
+
+	messages, err := cc.CQ.GetMessageHistory(int64(claims.UserID));
+
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{
+			"done": false,
+			"message": err.Error(),
+		})
+		return;
 	}
 
 	context.JSON(http.StatusOK, gin.H{

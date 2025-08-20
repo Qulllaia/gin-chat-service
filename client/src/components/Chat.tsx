@@ -3,23 +3,50 @@ import MessageList from './MessageList';
 import MessageInput from './MessageInput';
 import { Message } from '../types';
 import FriendsList from './FriendsList';
+import axios from 'axios';
 
 export function Chat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const ws = useRef<WebSocket>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const fetchMEssagesHistory = async () => {
+    await axios.get("http://localhost:5050/api/chat/history", {
+      method: "GET"
+    }).then((res)=> {
+      res.data.result.forEach((element: any) => {
+          const message = {
+            id: element.id,
+            text: element.message,
+            sender: element.IsThisUserSender ? 'user' : 'other',
+            timestamp: element.timestamp,
+          } as Message
+          console.log(element)
+          setMessages((messages) => [...messages, message])
+      });
+    }).then(()=>scrollToBottom());
+  }
+
+  const scrollToBottom = () => {
+    if (messagesEndRef.current) {
+        messagesEndRef.current.scrollTo({
+          top: messagesEndRef.current.scrollHeight,
+          behavior: 'auto'
+        });
+
+    }
+  };
 
   useEffect(() => { 
       if (!ws.current) {
         ws.current = new WebSocket('ws://localhost:5050/api/chat/ws?user_id=fslkfjslkfjslfs&chat_id=1');
-
       }
       console.log('useeffect')
       ws.current.onopen = () => {
-        console.log('WebSocket connected');
+        fetchMEssagesHistory();
       };
 
       ws.current.onmessage = (event) => {
-        console.log('Raw message:', event.data);
         const text = event.data;
         const newMessage: Message = {
           id: Date.now().toString(),
@@ -63,7 +90,7 @@ export function Chat() {
       <FriendsList/>
       <div className="chat-container">
         <h1>Минималистичный Чат</h1>
-        <MessageList messages={messages} />
+        <MessageList ref={messagesEndRef} messages={messages} />
         <MessageInput onSend={sendMessage} />
       </div>
     </div>
