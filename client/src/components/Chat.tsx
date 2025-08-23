@@ -4,11 +4,13 @@ import MessageInput from './MessageInput';
 import { Message } from '../types';
 import FriendsList from './FriendsList';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 export function Chat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const ws = useRef<WebSocket>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate()
 
   const fetchMEssagesHistory = async () => {
     await axios.get("http://localhost:5050/api/chat/history", {
@@ -21,7 +23,7 @@ export function Chat() {
             sender: element.IsThisUserSender ? 'user' : 'other',
             timestamp: element.timestamp,
           } as Message
-          console.log(element)
+          // console.log(element)
           setMessages((messages) => [...messages, message])
       });
     }).then(()=>scrollToBottom());
@@ -41,7 +43,7 @@ export function Chat() {
       if (!ws.current) {
         ws.current = new WebSocket('ws://localhost:5050/api/chat/ws?user_id=fslkfjslkfjslfs&chat_id=1');
       }
-      console.log('useeffect')
+      // console.log('useeffect')
       ws.current.onopen = () => {
         fetchMEssagesHistory();
       };
@@ -68,9 +70,15 @@ export function Chat() {
       return () => {
           if (ws.current && ws.current.readyState === WebSocket.OPEN) {
             ws.current.close();
+            navigate('/auth', { replace: true});
           }
       };
   }, []);
+
+
+  useEffect(()=> {
+    scrollToBottom();
+  }, [messages])
 
   const sendMessage = (text: string) => {
     if (ws.current && text.trim()) {

@@ -1,0 +1,14 @@
+.friend-p{
+    font-size: 2rem;
+    flex: 1;
+}
+
+.friend-card{
+  width: 99%;
+  height: 5.5rem;
+  background-color: #ffffff;
+  color: black;
+  border-radius: 0.5rem;
+  margin-top: 0.3rem;
+  display: flex;
+}

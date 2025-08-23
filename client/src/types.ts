@@ -4,3 +4,8 @@ export interface Message {
   sender: 'user' | 'other';
   timestamp: Date;
 }
+
+export interface Friend {
+    id: number, 
+    name: string,
+}

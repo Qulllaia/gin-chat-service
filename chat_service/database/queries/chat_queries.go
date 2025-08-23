@@ -16,7 +16,7 @@ func ChatQueryConstructor(db *database.Database) *ChatQueries {
 func (cq *ChatQueries) GetMessageHistory(current_user_id int64) ([]Message, error) {
     rows, err := cq.DB.Query(`
         SELECT id, message, chat_id, user_id, "timestamp"
-        FROM "ChatHistory"  ORDER BY "timestamp" DESC
+        FROM "ChatHistory"  ORDER BY "timestamp" ASC
     `)
     if err != nil {
 		return nil, err;

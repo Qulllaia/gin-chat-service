@@ -1,6 +1,7 @@
 package queries
 
 import (
+	"main/controller/dto"
 	"main/database"
 	. "main/database/models"
 )
@@ -74,4 +75,34 @@ func (uq *UserQuery) DeleteUser(id int) error {
         WHERE id = $1
     `, id)
     return err
+}
+
+func (uq *UserQuery) GetUsersFriends(id int) ([]dto.UserInFriendListDTO, error) {
+    rows, err := uq.DB.Query(`
+        SELECT id, name 
+        FROM "user" 
+        WHERE id in 
+        (select unnest(friends_list) 
+        from "user" 
+        where id = $1)     
+    `, id)
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+
+    var users []dto.UserInFriendListDTO
+    for rows.Next() {
+        var user dto.UserInFriendListDTO
+        if err := rows.Scan(&user.ID, &user.Name); err != nil {
+            return nil, err
+        }
+        users = append(users, user)
+    }
+    
+    if err = rows.Err(); err != nil {
+        return nil, err
+    }
+    
+    return users, nil
 }

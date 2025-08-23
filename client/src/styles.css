@@ -13,14 +13,6 @@
   justify-items: center;
 }
 
-.friend-card{
-  width: 99%;
-  height: 5.5rem;
-  background-color: #ffffff;
-  border-radius: 0.5rem;
-  margin-top: 0.3rem;
-}
-
 .chat-container {
   flex: 0 0 70%;
   border: 1px solid #ddd;
@@ -44,6 +36,8 @@ h1 {
   margin-bottom: 20px;
   border: 1px solid #eee;
   border-radius: 4px;
+  padding-top: 1rem;
+  padding-bottom: 1rem;
   box-sizing: border-box;
 }
 

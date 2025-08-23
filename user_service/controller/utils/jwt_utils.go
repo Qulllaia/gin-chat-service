@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"os"
 	"time"
 
@@ -40,4 +41,31 @@ func GenerateJWT(userID int64, name string) (string, error) {
 	}
 	
 	return tokenString, nil
+}
+
+func DecodeJWT(jwt_token string) (*Claims, error) {
+	if err := godotenv.Load(); err != nil {
+		println("Error loading .env file:", err)
+	}
+
+	jwtSecret := os.Getenv("JWT_SECRET");
+
+	token, err := jwt.ParseWithClaims(
+		jwt_token,
+		&Claims{}, 
+		func(token *jwt.Token) (interface{}, error) {
+			return []byte(jwtSecret), nil 
+		},
+	)
+
+	if err != nil {
+		println("Ошибка парсинга токена:", err)
+		return nil, err;
+	}
+
+	if claims, ok := token.Claims.(*Claims); ok && token.Valid {
+		return claims, nil;
+	} else {
+		return nil, fmt.Errorf("Ошибка парсинга токена доступа")
+	}
 }
