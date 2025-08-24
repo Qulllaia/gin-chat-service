@@ -2,7 +2,6 @@ package user_controller
 
 import (
 	. "main/controller/dto"
-	"main/controller/utils"
 	"main/database/queries"
 	"net/http"
 
@@ -112,34 +111,6 @@ func (uc *UserController) DeleteUser(context *gin.Context) {
 	} else {
 		context.JSON(http.StatusOK, gin.H{
 			"done": true,
-		})
-	}
-}
-
-func (uc *UserController) GetUsersFriends(context *gin.Context) {
-
-	cookie := context.Request.Cookies();
-
-	jwt_token := "";
-
-	for _, val := range cookie {
-		if val.Name == "session_token" {
-			jwt_token = val.Value;
-		}
-	}
-
-	claims, err := utils.DecodeJWT(jwt_token);
-
-	users, err := uc.UQ.GetUsersFriends(int(claims.UserID));
-	if err != nil {
-		context.JSON(http.StatusInternalServerError, gin.H{
-			"error": "GetUsersFriendsException",
-			"message": err.Error(),
-		})
-	} else {
-		context.JSON(http.StatusOK, gin.H{
-			"done": true,
-			"result": users,
 		})
 	}
 }

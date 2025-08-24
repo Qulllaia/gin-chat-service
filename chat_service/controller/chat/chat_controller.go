@@ -5,6 +5,8 @@ import (
 	"main/database/queries"
 	"net/http"
 
+	. "main/controller/dto"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -33,8 +35,14 @@ func (cc *ChatController) GetHistoryList(context *gin.Context) {
 		})
 		return;
 	}
+	var chatID ChatIDURI;
 
-	messages, err := cc.CQ.GetMessageHistory(int64(claims.UserID));
+	if err := context.ShouldBindUri(&chatID); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	messages, err := cc.CQ.GetMessageHistory(int64(claims.UserID), int64(chatID.ID));
 
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{
@@ -48,4 +56,33 @@ func (cc *ChatController) GetHistoryList(context *gin.Context) {
 		"done": true,
 		"result": messages,
 	})
+}
+
+
+func (cc *ChatController) GetUsersChats(context *gin.Context) {
+
+	cookie := context.Request.Cookies();
+
+	jwt_token := "";
+
+	for _, val := range cookie {
+		if val.Name == "session_token" {
+			jwt_token = val.Value;
+		}
+	}
+
+	claims, err := utils.DecodeJWT(jwt_token);
+
+	users, err := cc.CQ.GetUsersChats(int(claims.UserID));
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{
+			"error": "GetUsersChatsException",
+			"message": err.Error(),
+		})
+	} else {
+		context.JSON(http.StatusOK, gin.H{
+			"done": true,
+			"result": users,
+		})
+	}
 }

@@ -1,6 +1,7 @@
 package queries
 
 import (
+	"main/controller/dto"
 	"main/database"
 	. "main/database/models"
 )
@@ -13,11 +14,11 @@ func ChatQueryConstructor(db *database.Database) *ChatQueries {
 	return &ChatQueries{db}
 }
 
-func (cq *ChatQueries) GetMessageHistory(current_user_id int64) ([]Message, error) {
+func (cq *ChatQueries) GetMessageHistory(current_user_id, chat_id int64) ([]Message, error) {
     rows, err := cq.DB.Query(`
         SELECT id, message, chat_id, user_id, "timestamp"
-        FROM "ChatHistory"  ORDER BY "timestamp" ASC
-    `)
+        FROM "ChatHistory" WHERE chat_id = $1 ORDER BY "timestamp" ASC
+    `, chat_id)
     if err != nil {
 		return nil, err;
     }
@@ -38,4 +39,34 @@ func (cq *ChatQueries) GetMessageHistory(current_user_id int64) ([]Message, erro
 	}
 
 	return messages, nil;
+}
+
+func (uq *ChatQueries) GetUsersChats(id int) ([]dto.ChatListDTO, error) {
+    rows, err := uq.DB.Query(`
+        SELECT chat_id, name
+        FROM "Chat" 
+        WHERE chat_id in 
+        (select unnest(chat_list) 
+        from "user" 
+        where id = $1); 
+    `, id)
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+
+    var chats []dto.ChatListDTO
+    for rows.Next() {
+        var chat dto.ChatListDTO
+        if err := rows.Scan(&chat.ID, &chat.Name); err != nil {
+            return nil, err
+        }
+        chats = append(chats, chat)
+    }
+    
+    if err = rows.Err(); err != nil {
+        return nil, err
+    }
+    
+    return chats, nil
 }

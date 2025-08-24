@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
 import { Message } from '../types';
-import FriendsList from './FriendsList';
+import { ChatsList } from './ChatsList';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
@@ -11,9 +11,10 @@ export function Chat() {
   const ws = useRef<WebSocket>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate()
+  const [currentChatId, setCurrentChatId] = useState<number>(1);
 
   const fetchMEssagesHistory = async () => {
-    await axios.get("http://localhost:5050/api/chat/history", {
+    await axios.get(`http://localhost:5050/api/chat/history/${currentChatId}`, {
       method: "GET"
     }).then((res)=> {
       res.data.result.forEach((element: any) => {
@@ -82,7 +83,10 @@ export function Chat() {
 
   const sendMessage = (text: string) => {
     if (ws.current && text.trim()) {
-      ws.current.send(text);
+      ws.current.send(JSON.stringify({
+        chat_id: currentChatId.toString(),
+        messages: text
+      }));
       const newMessage: Message = {
           id: Date.now().toString(),
           text,
@@ -95,7 +99,7 @@ export function Chat() {
 
   return (
     <div className='chat-body'>
-      <FriendsList/>
+      <ChatsList setCurrentChatId ={setCurrentChatId}/>
       <div className="chat-container">
         <h1>Минималистичный Чат</h1>
         <MessageList ref={messagesEndRef} messages={messages} />

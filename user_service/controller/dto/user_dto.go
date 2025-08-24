@@ -9,8 +9,3 @@ type UserDTO struct {
 type UserIDURI struct {
 	ID int `uri:"id""`
 }
-
-type UserInFriendListDTO struct {
-	Name string `db:"name"`
-	ID   int    `db:"id"`
-}

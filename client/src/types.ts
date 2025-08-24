@@ -5,7 +5,7 @@ export interface Message {
   timestamp: Date;
 }
 
-export interface Friend {
+export interface Chat {
     id: number, 
     name: string,
 }

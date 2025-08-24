@@ -23,6 +23,5 @@ func (a *User) UserRoutes(controller *controller.Controller) {
 		api.GET("/get", controller.User.GetAllUsers)
 		api.DELETE("/delete/:id", controller.User.DeleteUser)
 		api.PUT("/update", controller.User.UpdateUser)
-		api.GET("/friends", controller.User.GetUsersFriends)
 	}
 }
