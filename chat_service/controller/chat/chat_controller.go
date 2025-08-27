@@ -16,17 +16,7 @@ type ChatController struct {
 
 func (cc *ChatController) GetHistoryList(context *gin.Context) {
 
-	cookie := context.Request.Cookies();
-
-	jwt_token := "";
-
-	for _, val := range cookie {
-		if val.Name == "session_token" {
-			jwt_token = val.Value;
-		}
-	}
-
-	claims, err := utils.DecodeJWT(jwt_token);
+	claims, err := utils.ExtractClaimsFromCookie(context);
 
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{
@@ -61,17 +51,7 @@ func (cc *ChatController) GetHistoryList(context *gin.Context) {
 
 func (cc *ChatController) GetUsersChats(context *gin.Context) {
 
-	cookie := context.Request.Cookies();
-
-	jwt_token := "";
-
-	for _, val := range cookie {
-		if val.Name == "session_token" {
-			jwt_token = val.Value;
-		}
-	}
-
-	claims, err := utils.DecodeJWT(jwt_token);
+	claims, err := utils.ExtractClaimsFromCookie(context);
 
 	users, err := cc.CQ.GetUsersChats(int(claims.UserID));
 	if err != nil {

@@ -9,3 +9,8 @@ type UserDTO struct {
 type UserIDURI struct {
 	ID int `uri:"id""`
 }
+
+type UserWithoutPasswordDTO struct {
+	Name string `json:"name"`
+	ID   int    `json:"id"`
+}

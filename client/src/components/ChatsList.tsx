@@ -1,19 +1,26 @@
 import { useEffect, useState } from "react";
 import ChatCard from "./ChatCard";
 import axios from "axios";
-import { Chat } from "../types";
+import { Chat, User } from "../types";
+import { ParentForm } from "./ParentForm";
+import UserCard from "./UserCard";
 
 export function ChatsList({setCurrentChatId}:any) {
 
     const [chats, setChats] = useState<Chat[]>([])
+    const [users, setUsers] = useState<User[]>([])
+    const [currentUser, setCurrentUser] = useState<number>(0)
 
-    const fetchFriends = async () => {
+
+    const [isChatCreationOpen, setIsChatCreatonOpen] = useState<boolean>(false);
+
+    const fetchChats = async () => {
         await axios.get('http://localhost:5050/api/chat/chats').then((res) => {
             if(res.data.result){
-                const friendList = res.data.result.map((user: any) => {
+                const friendList = res.data.result.map((chat: any) => {
                     return {
-                        id: user.ID,
-                        name: user.Name,
+                        id: chat.ID,
+                        name: chat.Name,
                     } as Chat;
                 })
                 setChats(friendList);
@@ -21,12 +28,45 @@ export function ChatsList({setCurrentChatId}:any) {
         })
     }
 
+    const fetchCurrentUsers = async () => {
+        await axios.get('http://localhost:5000/api/user/get/except').then((res) => {
+            if(res.data.result){
+                const friendList = res.data.result.map((user: any) => {
+                    console.log(user)
+                    return {
+                        id: user.id,
+                        name: user.name,
+                    } as User;
+                })
+                setUsers(friendList);
+            }
+        })
+    }
+
+    const createChat = async (user_id: number) => {
+
+    }
+
     useEffect(()=> {
-        fetchFriends()
+        fetchChats()
     },[])
+
+    useEffect(()=> {
+        if(isChatCreationOpen) fetchCurrentUsers()
+    },[isChatCreationOpen])
 
     return (
         <div className="list">
+            <ParentForm
+                isDialog ={true}
+                isOpen={isChatCreationOpen}
+                setIsOpen={setIsChatCreatonOpen}
+            >
+                {users.map((val)=>{
+                    return <UserCard user={val} createChatHandler={createChat}></UserCard>
+                })}
+            </ParentForm>
+            <button onClick={()=>setIsChatCreatonOpen(true)}>Создать чат</button>
             {chats.map((Chat) => (
                 <ChatCard key={Chat.id} friend ={Chat} setCurrentChatId={setCurrentChatId}/>
             ))}

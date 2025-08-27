@@ -8,3 +8,7 @@ type ChatListDTO struct {
 type ChatIDURI struct {
 	ID int `uri:"id""`
 }
+
+type UserIDURI struct {
+	ID int `uri:"id""`
+}

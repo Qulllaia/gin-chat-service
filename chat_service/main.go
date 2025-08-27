@@ -26,8 +26,10 @@ func main() {
 	db := database.CreateConnection();
 
 	cq := queries.ChatQueryConstructor(db);
+	wsq := queries.WSQueryConstructor(db);
 
-	controllerChat := controller.NewController(db, cq);
+
+	controllerChat := controller.NewController(db, cq, wsq);
 	routerChat := router.NewRouter(app);
 	routerChat.RegisterRouters(controllerChat);
 

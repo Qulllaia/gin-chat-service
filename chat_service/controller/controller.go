@@ -12,10 +12,10 @@ type Controller struct {
 	WS websockets.WSConnection
 }
 
-func NewController(db *database.Database, cq *queries.ChatQueries) *Controller{
+func NewController(db *database.Database, cq *queries.ChatQueries, wsq *queries.WSQueries) *Controller{
 
 	return &Controller{
 		Chat: chat_controller.ChatController{CQ: cq},
-		WS: websockets.WSConnection{DB: db},
+		WS: websockets.WSConnection{WSQ: wsq},
 	};
 }

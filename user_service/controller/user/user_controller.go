@@ -2,6 +2,7 @@ package user_controller
 
 import (
 	. "main/controller/dto"
+	"main/controller/utils"
 	"main/database/queries"
 	"net/http"
 
@@ -113,4 +114,31 @@ func (uc *UserController) DeleteUser(context *gin.Context) {
 			"done": true,
 		})
 	}
+}
+
+func (uc *UserController) GetUserExceptCurrent(context *gin.Context) {
+
+	claims, err := utils.ExtractClaimsFromCookie(context);
+
+
+	if err != nil {
+		context.JSON(401, gin.H{
+			"error": "GetUserExceptCurrent",
+			"message": err.Error(),
+		})
+	}
+	users, err := uc.UQ.GetUserExceptCurrent(int(claims.UserID));
+
+	if err != nil {
+		context.JSON(500, gin.H{
+			"error": "GetUserExceptCurrent",
+			"message": err.Error(),
+		})
+	}
+
+	context.JSON(200, gin.H{
+		"done": true,
+		"result": users,
+	})
+
 }

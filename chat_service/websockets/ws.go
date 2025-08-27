@@ -3,11 +3,10 @@ package websockets
 import (
 	"encoding/json"
 	"main/controller/utils"
-	"main/database"
 	. "main/database/models"
+	"main/database/queries"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -28,7 +27,7 @@ type UserWSData struct {
 }
 
 type WSConnection struct {
-	DB *database.Database
+	WSQ *queries.WSQueries
 }
 
 type MessageWS struct {
@@ -48,33 +47,18 @@ func (ws *WSConnection) WebsocketsInit(context *gin.Context) {
 		return;
 	}
 
-	cookie := context.Request.Cookies();
-
-	jwt_token := "";
-
-	for _, val := range cookie {
-		if val.Name == "session_token" {
-			jwt_token = val.Value;
-		}
-	}
-
-	claims, err := utils.DecodeJWT(jwt_token);
+	claims, err := utils.ExtractClaimsFromCookie(context);
 
 	if err != nil {
 		println("Error JWT", err.Error())
 		return;
 	}
     var user User
-    err = ws.DB.DB.QueryRow(`
-        SELECT id, chat_list 
-        FROM "user" 
-        WHERE id = $1
-    `, claims.UserID).Scan(&user.ID, &user.Chat_list)
-    
-    if err != nil {
-        println(err.Error());
-    }
 
+	if err := ws.WSQ.GetUserChatList(claims, &user); err != nil {
+		println("GetUserChatListError", err.Error())
+	}
+    
 	user_id_conns_with_chat_ids[claims.UserID] = 
 			UserWSData{chat_ids: user.Chat_list, ws:conn};
 
@@ -94,9 +78,6 @@ func (ws *WSConnection) WebsocketsInit(context *gin.Context) {
 
 		err = json.Unmarshal(message_ws, &message)
 
-
-
-		// if(chat_id_get_successfull) {
 		var getter_conn *websocket.Conn;
 		for user_id, value := range user_id_conns_with_chat_ids {
 			chat_id, _ := strconv.Atoi(message.Chat_id); 
@@ -106,13 +87,8 @@ func (ws *WSConnection) WebsocketsInit(context *gin.Context) {
 				if getter_conn != conn {
 					err  = getter_conn.WriteMessage(messageType, []byte(message.Message));
 				} else {
-
-					_, err := ws.DB.DB.Exec(
-						`INSERT INTO "ChatHistory" (message, chat_id, user_id, timestamp) 
-						VALUES($1, $2, $3, $4)`, 
-						string(message.Message), chat_id, user_id, time.Now(),
-						);
-					if(err != nil) {
+			
+					if err = ws.WSQ.InsertMessageIntoChatHistory(chat_id, user_id, string(message.Message)); err != nil {
 						println(err.Error());	
 					}
 				}

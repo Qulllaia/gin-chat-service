@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	"main/config"
 	"main/controller"
 	"main/database"
 	"main/database/queries"
@@ -23,7 +25,14 @@ func main() {
 		MaxAge:           12 * time.Hour, // Кеширование CORS-префлайта
 	}))
 
-	db := database.CreateConnection();
+	ctx := context.Background()
+    
+	config, err := config.CreateConfigDatabase();
+    
+	ctx = context.WithValue(ctx, "config", config)
+	
+
+	db, err := database.CreateConnection(ctx);
 	uq := queries.UserQueryConstructor(db);
 	aq := queries.AuthQueryConstructor(db);
 	controller := controller.NewController(uq, aq);
@@ -31,6 +40,7 @@ func main() {
 	newRouter := router.NewRouter(app);
 
 	newRouter.RegisterRouters(controller);
-
-	app.Run(":5000");
+	if err == nil {
+		app.Run(":5000");
+	}
 }
