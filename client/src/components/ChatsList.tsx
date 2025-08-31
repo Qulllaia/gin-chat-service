@@ -4,12 +4,14 @@ import axios from "axios";
 import { Chat, User } from "../types";
 import { ParentForm } from "./ParentForm";
 import UserCard from "./UserCard";
+import { useNavigate } from "react-router-dom";
 
 export function ChatsList({setCurrentChatId}:any) {
 
     const [chats, setChats] = useState<Chat[]>([])
     const [users, setUsers] = useState<User[]>([])
     const [currentUser, setCurrentUser] = useState<number>(0)
+    const navigate = useNavigate()
 
 
     const [isChatCreationOpen, setIsChatCreatonOpen] = useState<boolean>(false);
@@ -26,10 +28,16 @@ export function ChatsList({setCurrentChatId}:any) {
                 setChats(friendList);
             }
         })
+        .catch((e)=> {
+            if(e.status === 401){
+                navigate('/auth', { replace: true});
+            }
+        });
     }
 
     const fetchCurrentUsers = async () => {
-        await axios.get('http://localhost:5000/api/user/get/except').then((res) => {
+        await axios.get('http://localhost:5000/api/user/get/except')
+        .then((res) => {
             if(res.data.result){
                 const friendList = res.data.result.map((user: any) => {
                     console.log(user)
@@ -41,6 +49,11 @@ export function ChatsList({setCurrentChatId}:any) {
                 setUsers(friendList);
             }
         })
+        .catch((e)=> {
+            if(e.status === 401){
+                navigate('/auth', { replace: true});
+            }
+        });
     }
 
     const createChat = async (user_id: number) => {

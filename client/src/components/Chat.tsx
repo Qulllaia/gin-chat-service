@@ -17,7 +17,8 @@ export function Chat() {
     await axios.get(`http://localhost:5050/api/chat/history/${currentChatId}`, {
       method: "GET"
     }).then((res)=> {
-      res.data.result.forEach((element: any) => {
+      if(res.status === 200) {
+        res.data.result.forEach((element: any) => {
           const message = {
             id: element.id,
             text: element.message,
@@ -26,8 +27,16 @@ export function Chat() {
           } as Message
           // console.log(element)
           setMessages((messages) => [...messages, message])
-      });
-    }).then(()=>scrollToBottom());
+        });
+      } else {
+        navigate('/auth', { replace: true});
+      }
+    }).then(()=>scrollToBottom())
+    .catch((e)=> {
+      if(e.status === 401){
+        navigate('/auth', { replace: true});
+      }
+    });
   }
 
   const scrollToBottom = () => {
