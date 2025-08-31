@@ -44,7 +44,7 @@ export function ChatsList({setCurrentChatId}:any) {
     }
 
     const createChat = async (user_id: number) => {
-
+        
     }
 
     useEffect(()=> {

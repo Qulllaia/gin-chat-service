@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"main/config"
 	"main/controller"
 	"main/database"
@@ -25,21 +24,21 @@ func main() {
 		MaxAge:           12 * time.Hour, // Кеширование CORS-префлайта
 	}))
 
-	ctx := context.Background()
-    
-	config, err := config.CreateConfigDatabase();
-    
-	ctx = context.WithValue(ctx, "config", config)
-	
+	config, err := config.CreateConfig();
 
-	db, err := database.CreateConnection(ctx);
+	if err != nil {
+		panic("CONFIG ERROR")
+	}
+    
+
+	db, err := database.CreateConnection(config);
 	uq := queries.UserQueryConstructor(db);
 	aq := queries.AuthQueryConstructor(db);
 	controller := controller.NewController(uq, aq);
 
 	newRouter := router.NewRouter(app);
 
-	newRouter.RegisterRouters(controller);
+	newRouter.RegisterRouters(controller, config);
 	if err == nil {
 		app.Run(":5000");
 	}

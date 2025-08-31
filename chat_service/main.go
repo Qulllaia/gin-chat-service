@@ -1,10 +1,12 @@
 package main
 
 import (
+	"main/config"
 	"main/controller"
 	"main/database"
 	"main/database/queries"
 	"main/router"
+	"main/websockets"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -22,16 +24,26 @@ func main() {
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour, // Кеширование CORS-префлайта
 	}))
-	
-	db := database.CreateConnection();
 
+	config, err := config.CreateConfig();
+
+	if err != nil {
+		panic("CONFIG ERROR")
+	}
+	
+	db, _ := database.CreateConnection(config);
+	defer db.DB.Close()
+
+	
 	cq := queries.ChatQueryConstructor(db);
 	wsq := queries.WSQueryConstructor(db);
+	
+	connectorActor := websockets.NewConnectorActor(wsq)
+    defer connectorActor.Stop()
 
-
-	controllerChat := controller.NewController(db, cq, wsq);
+	controllerChat := controller.NewController(db, cq, connectorActor);
 	routerChat := router.NewRouter(app);
-	routerChat.RegisterRouters(controllerChat);
+	routerChat.RegisterRouters(controllerChat, config);
 
 	app.Run(":5050");
 }

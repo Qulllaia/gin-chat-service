@@ -14,7 +14,7 @@ type Config struct {
 	JWT_SECRET string;
 }
 
-func CreateConfigDatabase() (*Config, error) {
+func CreateConfig() (*Config, error) {
 	if err := godotenv.Load(); err != nil {
         println("Error loading .env file:", err)
 		return nil, err

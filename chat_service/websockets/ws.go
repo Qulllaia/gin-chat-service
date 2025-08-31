@@ -3,15 +3,15 @@ package websockets
 import (
 	"encoding/json"
 	"main/controller/utils"
-	. "main/database/models"
-	"main/database/queries"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
-	"github.com/lib/pq"
 );
+
+type WSConnection struct {
+	Actor *ConnectorActor
+}
 
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
@@ -21,49 +21,26 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-type UserWSData struct {
-	chat_ids pq.Int64Array;
-	ws *websocket.Conn
-}
-
-type WSConnection struct {
-	WSQ *queries.WSQueries
-}
-
-type MessageWS struct {
-	Chat_id string `json:"chat_id"`;
-	Message string `json:"messages"`;
-}
-
 var user_id_conns_with_chat_ids = map[int]UserWSData{} 
 
 
-// TODO: Перенести нахуй sql запросы в query и нормально поделить код, типы и прочее
 func (ws *WSConnection) WebsocketsInit(context *gin.Context) {
 	conn, err := upgrader.Upgrade(context.Writer, context.Request, nil);
-
+	
 	if err != nil {
 		println("Error Connection", err.Error())
 		return;
 	}
 
+	defer conn.Close();
+	
 	claims, err := utils.ExtractClaimsFromCookie(context);
 
 	if err != nil {
 		println("Error JWT", err.Error())
 		return;
 	}
-    var user User
-
-	if err := ws.WSQ.GetUserChatList(claims, &user); err != nil {
-		println("GetUserChatListError", err.Error())
-	}
-    
-	user_id_conns_with_chat_ids[claims.UserID] = 
-			UserWSData{chat_ids: user.Chat_list, ws:conn};
-
-	
-	defer conn.Close();
+	ws.Actor.AddClient(conn, claims.UserID)
 
 	for {
 
@@ -78,32 +55,8 @@ func (ws *WSConnection) WebsocketsInit(context *gin.Context) {
 
 		err = json.Unmarshal(message_ws, &message)
 
-		var getter_conn *websocket.Conn;
-		for user_id, value := range user_id_conns_with_chat_ids {
-			chat_id, _ := strconv.Atoi(message.Chat_id); 
-
-			if contains(value.chat_ids, int64(chat_id)) {
-				getter_conn = value.ws;
-				if getter_conn != conn {
-					err  = getter_conn.WriteMessage(messageType, []byte(message.Message));
-				} else {
-			
-					if err = ws.WSQ.InsertMessageIntoChatHistory(chat_id, user_id, string(message.Message)); err != nil {
-						println(err.Error());	
-					}
-				}
-			}
-		}
-
+		ws.Actor.Send(message, messageType, conn);
 	}
 }
 
 
-func contains(slice pq.Int64Array, item int64) bool {
-    for _, element := range slice {
-        if element == item {
-            return true
-        }
-    }
-    return false
-}

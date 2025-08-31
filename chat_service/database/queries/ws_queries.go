@@ -1,7 +1,6 @@
 package queries
 
 import (
-	"main/controller/utils"
 	"main/database"
 	. "main/database/models"
 	"time"
@@ -16,12 +15,12 @@ func WSQueryConstructor(db *database.Database) *WSQueries {
 }
 
 
-func (wsq *WSQueries) GetUserChatList(claims *utils.Claims, user *User) (error) {
+func (wsq *WSQueries) GetUserChatList(user_id int, user *User) (error) {
     err := wsq.DB.QueryRow(`
         SELECT id, chat_list 
         FROM "user" 
         WHERE id = $1
-    `, claims.UserID).Scan(&user.ID, &user.Chat_list)
+    `, user_id).Scan(&user.ID, &user.Chat_list)
 
 	return err;
 }

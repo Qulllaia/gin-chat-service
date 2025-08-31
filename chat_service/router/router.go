@@ -1,7 +1,9 @@
 package router
 
 import (
+	"main/config"
 	"main/controller"
+	"main/middleware"
 	chat_router "main/router/chat"
 
 	"github.com/gin-gonic/gin"
@@ -15,8 +17,8 @@ func NewRouter(router *gin.Engine) *Router {
 	return &Router{Router: router}
 }
 
-func (r *Router) RegisterRouters(controller *controller.Controller) {
-	api := r.Router.Group("/api");
+func (r *Router) RegisterRouters(controller *controller.Controller, config *config.Config) {
+	api := r.Router.Group("/api", middleware.ConfigMiddleware(config));
 	chatRouter := chat_router.NewChat(api);
 
 	chatRouter.ChatRoutes(controller);
