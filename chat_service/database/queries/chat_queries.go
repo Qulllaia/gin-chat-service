@@ -45,10 +45,7 @@ func (uq *ChatQueries) GetUsersChats(id int) ([]dto.ChatListDTO, error) {
     rows, err := uq.DB.Query(`
         SELECT chat_id, name
         FROM "Chat" 
-        WHERE chat_id in 
-        (select unnest(chat_list) 
-        from "user" 
-        where id = $1); 
+        WHERE $1 = ANY(users) 
     `, id)
     if err != nil {
         return nil, err

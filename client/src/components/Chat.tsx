@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
-import { Message } from '../types';
+import { MESSAGE, Message, NEW_CHAT } from '../types';
 import { ChatsList } from './ChatsList';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
@@ -12,6 +12,8 @@ export function Chat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate()
   const [currentChatId, setCurrentChatId] = useState<number>(1);
+  const [currentUser, setCurrentUser] = useState<number>(0)
+  const [isCreatingNewChat, setIsCreatingNewChat] = useState<boolean>(false);
 
   const fetchMEssagesHistory = async () => {
     await axios.get(`http://localhost:5050/api/chat/history/${currentChatId}`, {
@@ -90,12 +92,29 @@ export function Chat() {
     scrollToBottom();
   }, [messages])
 
+  useEffect(()=>{
+    setMessages([]);
+    fetchMEssagesHistory();
+  }, [currentChatId])
+
   const sendMessage = (text: string) => {
     if (ws.current && text.trim()) {
-      ws.current.send(JSON.stringify({
-        chat_id: currentChatId.toString(),
-        messages: text
-      }));
+
+      if(isCreatingNewChat) {
+        ws.current.send(JSON.stringify({
+          type: NEW_CHAT,
+          user_id: currentUser.toString(),
+          messages: text
+        }));
+        setIsCreatingNewChat(false);
+      } else {
+        ws.current.send(JSON.stringify({
+          type: MESSAGE,
+          chat_id: currentChatId.toString(),
+          messages: text
+        }));
+      }
+        
       const newMessage: Message = {
           id: Date.now().toString(),
           text,
@@ -108,7 +127,12 @@ export function Chat() {
 
   return (
     <div className='chat-body'>
-      <ChatsList setCurrentChatId ={setCurrentChatId}/>
+      <ChatsList 
+        setCurrentChatId ={setCurrentChatId} 
+        setMessages={setMessages} 
+        setIsCreatingNewChat={setIsCreatingNewChat} 
+        setCurrentUser={setCurrentUser}
+      />
       <div className="chat-container">
         <h1>Минималистичный Чат</h1>
         <MessageList ref={messagesEndRef} messages={messages} />

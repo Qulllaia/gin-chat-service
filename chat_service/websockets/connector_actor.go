@@ -15,6 +15,7 @@ type ConnectorActor struct {
 	stopChan chan struct{}
 	wg       sync.WaitGroup
 	user_id_conns_with_chat_ids  map[int]UserWSData
+	conns_to_user_ids map[*websocket.Conn]int
 	clientsMu sync.RWMutex
 	WSQ *queries.WSQueries
 }
@@ -24,6 +25,7 @@ func NewConnectorActor(wsq *queries.WSQueries) *ConnectorActor {
         mailbox:  make(chan mailboxObject, 100),
         stopChan: make(chan struct{}),
         user_id_conns_with_chat_ids:  make(map[int]UserWSData),
+        conns_to_user_ids:  make(map[*websocket.Conn]int),
 		WSQ: wsq,
     }
     
@@ -47,7 +49,26 @@ func (a *ConnectorActor) processMessages() {
 }
 
 func (a *ConnectorActor) handleMessage(msg MessageWS, messageType int, conn *websocket.Conn) {
-	a.broadcastMessage(msg, messageType, conn);
+	switch(msg.Type) {
+		case "MESSAGE": 
+			a.broadcastMessage(msg, messageType, conn);
+		case "NEW_CHAT": 
+			a.createChatWithMessage(msg, conn);
+			a.broadcastMessage(msg, messageType, conn);
+	}
+}
+
+func (a *ConnectorActor) createChatWithMessage(msg MessageWS, conn *websocket.Conn) {
+	current_user_id := a.conns_to_user_ids[conn];
+	to_user_id, _ := strconv.Atoi(msg.User_id);
+
+
+	err, chat_id := a.WSQ.CreateChatWithMessage(current_user_id, to_user_id);
+	if err != nil {
+		println("Error while creating a chat", err.Error());
+	}
+
+	a.WSQ.InsertMessageIntoChatHistory(chat_id, current_user_id, msg.Message);
 }
 
 func (a *ConnectorActor) Send(msg MessageWS, messageType int, conn *websocket.Conn) {
@@ -63,7 +84,7 @@ func (a *ConnectorActor) AddClient(conn *websocket.Conn, user_id int) {
     a.clientsMu.Lock()
     defer a.clientsMu.Unlock()
 
-	var user User
+	var user User = User{ ID: user_id}
 
 	if err := a.WSQ.GetUserChatList(user_id, &user); err != nil {
 		println("GetUserChatListError", err.Error())
@@ -73,6 +94,8 @@ func (a *ConnectorActor) AddClient(conn *websocket.Conn, user_id int) {
 		chat_ids: user.Chat_list,
 		ws: conn,
 	}
+
+	a.conns_to_user_ids[conn] = user_id;
 }
 
 func (a *ConnectorActor) RemoveClient(user_id int) {

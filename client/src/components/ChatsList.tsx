@@ -6,12 +6,12 @@ import { ParentForm } from "./ParentForm";
 import UserCard from "./UserCard";
 import { useNavigate } from "react-router-dom";
 
-export function ChatsList({setCurrentChatId}:any) {
+export function ChatsList({setCurrentChatId, setMessages, setCurrentUser, setIsCreatingNewChat}:any) {
 
     const [chats, setChats] = useState<Chat[]>([])
     const [users, setUsers] = useState<User[]>([])
-    const [currentUser, setCurrentUser] = useState<number>(0)
     const navigate = useNavigate()
+
 
 
     const [isChatCreationOpen, setIsChatCreatonOpen] = useState<boolean>(false);
@@ -57,7 +57,10 @@ export function ChatsList({setCurrentChatId}:any) {
     }
 
     const createChat = async (user_id: number) => {
-        
+        setMessages([])
+        setIsChatCreatonOpen(false);
+        setIsCreatingNewChat(true);
+        setCurrentUser(user_id)
     }
 
     useEffect(()=> {

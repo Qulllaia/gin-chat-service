@@ -14,3 +14,6 @@ export interface User {
     id: number, 
     name: string,
 }
+
+export const NEW_CHAT = 'NEW_CHAT'
+export const MESSAGE = 'MESSAGE'

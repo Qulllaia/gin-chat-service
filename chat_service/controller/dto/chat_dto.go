@@ -1,8 +1,8 @@
 package dto
 
 type ChatListDTO struct {
-	Name string `db:"name"`
-	ID   int    `db:"id"`
+	Name *string `db:"name"`
+	ID   int     `db:"id"`
 }
 
 type ChatIDURI struct {

@@ -4,6 +4,8 @@ import (
 	"main/database"
 	. "main/database/models"
 	"time"
+
+	"github.com/lib/pq"
 )
 
 type WSQueries struct {
@@ -16,11 +18,28 @@ func WSQueryConstructor(db *database.Database) *WSQueries {
 
 
 func (wsq *WSQueries) GetUserChatList(user_id int, user *User) (error) {
-    err := wsq.DB.QueryRow(`
-        SELECT id, chat_list 
-        FROM "user" 
-        WHERE id = $1
-    `, user_id).Scan(&user.ID, &user.Chat_list)
+    rows, err := wsq.DB.Query(`
+        SELECT chat_id 
+        FROM "Chat"
+        WHERE $1 = ANY(users) 
+    `, user_id);
+
+    var chatIDs []int64
+
+    for rows.Next() {
+        var chatID int64 
+        err := rows.Scan(&chatID) 
+        if err != nil {
+            return err
+        }
+        chatIDs = append(chatIDs, chatID)
+    }
+
+    if err := rows.Err(); err != nil {
+        return err
+    }
+
+    user.Chat_list = chatIDs
 
 	return err;
 }
@@ -32,4 +51,16 @@ func (wsq *WSQueries) InsertMessageIntoChatHistory(chat_id, user_id int, message
 		message, chat_id, user_id, time.Now(),
 		);
 	return err;
+}
+
+func (wsq *WSQueries) CreateChatWithMessage(user_ids ...int) (error, int) {
+	var chat_id int;
+	userIDsArray := pq.Array(user_ids)
+	err := wsq.DB.QueryRow(
+		`INSERT INTO "Chat" (users, name, chat_type) 
+		VALUES($1, $2, $3) RETURNING chat_id`, 
+		userIDsArray, nil, "PRIVATECHAT",
+	).Scan(&chat_id);
+	// println(chat_id);
+	return err, chat_id;
 }

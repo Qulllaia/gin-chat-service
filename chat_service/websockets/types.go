@@ -9,7 +9,10 @@ type MessageType string
 
 type MessageWS struct {
 	Chat_id string `json:"chat_id"`
+	User_id string `json:"user_id"`
 	Message string `json:"messages"`
+	Type string `json:"type"`
+	
 }
 
 type UserWSData struct {
