@@ -6,34 +6,11 @@ import { ParentForm } from "./ParentForm";
 import UserCard from "./UserCard";
 import { useNavigate } from "react-router-dom";
 
-export function ChatsList({setCurrentChatId, setMessages, setCurrentUser, setIsCreatingNewChat}:any) {
-
-    const [chats, setChats] = useState<Chat[]>([])
+export function ChatsList({setCurrentChatId, currentChatId, setMessages, setCurrentUser, setIsCreatingNewChat, setChatHeader, fetchChats, chats, setChats}:any) {
     const [users, setUsers] = useState<User[]>([])
     const navigate = useNavigate()
 
-
-
     const [isChatCreationOpen, setIsChatCreatonOpen] = useState<boolean>(false);
-
-    const fetchChats = async () => {
-        await axios.get('http://localhost:5050/api/chat/chats').then((res) => {
-            if(res.data.result){
-                const friendList = res.data.result.map((chat: any) => {
-                    return {
-                        id: chat.ID,
-                        name: chat.Name,
-                    } as Chat;
-                })
-                setChats(friendList);
-            }
-        })
-        .catch((e)=> {
-            if(e.status === 401){
-                navigate('/auth', { replace: true});
-            }
-        });
-    }
 
     const fetchCurrentUsers = async () => {
         await axios.get('http://localhost:5000/api/user/get/except')
@@ -82,11 +59,20 @@ export function ChatsList({setCurrentChatId, setMessages, setCurrentUser, setIsC
                     return <UserCard user={val} createChatHandler={createChat}></UserCard>
                 })}
             </ParentForm>
-            <button onClick={()=>setIsChatCreatonOpen(true)}>Создать чат</button>
-            {chats.map((Chat) => (
-                <ChatCard key={Chat.id} friend ={Chat} setCurrentChatId={setCurrentChatId}/>
-            ))}
+            <button className="btn btn-outline-secondary align-self-stretch m-2" type="button" onClick={()=>setIsChatCreatonOpen(true)}>Создать чат</button>
+            <div className="d-flex flex-column align-items-stretch flex-shrink-0 bg-body-tertiary w-100">
+                <a href="/" className="d-flex align-items-center flex-shrink-0 p-3 link-body-emphasis text-decoration-none border-bottom">
+                    <svg className="bi pe-none me-2" width="30" height="24" aria-hidden="true">
+                        <use href="#bootstrap"></use>
+                    </svg>
+                    <span className="fs-5 fw-semibold">Список чатов</span> 
+                </a>
+                {chats.map((Chat:Chat) => (
+                    <ChatCard key={Chat.id} friend ={Chat} setCurrentChatId={setCurrentChatId} currentChatId={currentChatId} setChatHeader={setChatHeader}/>
+                ))}
+            </div>
         </div>
+
     )
 }
 

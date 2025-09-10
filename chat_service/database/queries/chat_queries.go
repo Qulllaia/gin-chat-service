@@ -43,8 +43,15 @@ func (cq *ChatQueries) GetMessageHistory(current_user_id, chat_id int64) ([]Mess
 
 func (uq *ChatQueries) GetUsersChats(id int) ([]dto.ChatListDTO, error) {
     rows, err := uq.DB.Query(`
-        SELECT chat_id, name
-        FROM "Chat" 
+        SELECT chat_id,
+
+            CASE 
+                WHEN c.chat_type = 'PRIVATECHAT' THEN u.name 
+                ELSE c.name 
+            END AS name
+
+        FROM "Chat" c
+        LEFT JOIN "user" u on u.id = (SELECT unnest(c.users) EXCEPT SELECT $1)
         WHERE $1 = ANY(users) 
     `, id)
     if err != nil {

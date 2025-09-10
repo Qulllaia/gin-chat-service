@@ -55,7 +55,7 @@ func (cc *ChatController) GetUsersChats(context *gin.Context) {
 
 	users, err := cc.CQ.GetUsersChats(int(claims.UserID));
 	if err != nil {
-		println(err.Error())
+		// println(err.Error())
 		context.JSON(http.StatusInternalServerError, gin.H{
 			"error": "GetUsersChatsException",
 			"message": err.Error(),

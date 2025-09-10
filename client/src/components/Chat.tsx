@@ -1,20 +1,22 @@
 import { useEffect, useRef, useState } from 'react';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
-import { MESSAGE, Message, NEW_CHAT } from '../types';
+import { Chat, MESSAGE, Message, NEW_CHAT } from '../types';
 import { ChatsList } from './ChatsList';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
-export function Chat() {
+export function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const ws = useRef<WebSocket>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate()
   const [currentChatId, setCurrentChatId] = useState<number>(1);
   const [currentUser, setCurrentUser] = useState<number>(0)
+  const [chatHeader, setChatHeader] = useState<string>('Минималистичный Чат')
   const [isCreatingNewChat, setIsCreatingNewChat] = useState<boolean>(false);
-
+  const [chats, setChats] = useState<Chat[]>([])
+  
   const fetchMEssagesHistory = async () => {
     await axios.get(`http://localhost:5050/api/chat/history/${currentChatId}`, {
       method: "GET"
@@ -27,7 +29,6 @@ export function Chat() {
             sender: element.IsThisUserSender ? 'user' : 'other',
             timestamp: element.timestamp,
           } as Message
-          // console.log(element)
           setMessages((messages) => [...messages, message])
         });
       } else {
@@ -39,6 +40,25 @@ export function Chat() {
         navigate('/auth', { replace: true});
       }
     });
+  }
+
+  const fetchChats = async () => {
+      await axios.get('http://localhost:5050/api/chat/chats').then((res) => {
+          if(res.data.result){
+              const friendList = res.data.result.map((chat: any) => {
+                  return {
+                      id: chat.ID,
+                      name: chat.Name,
+                  } as Chat;
+              })
+              setChats(friendList);
+          }
+      })
+      .catch((e)=> {
+          if(e.status === 401){
+              navigate('/auth', { replace: true});
+          }
+      });
   }
 
   const scrollToBottom = () => {
@@ -61,14 +81,20 @@ export function Chat() {
       };
 
       ws.current.onmessage = (event) => {
-        const text = event.data;
-        const newMessage: Message = {
-          id: Date.now().toString(),
-          text,
-          sender: 'other',
-          timestamp: new Date(),
-        };
-        setMessages((prev) => [...prev, newMessage]);
+        const data = JSON.parse(event.data);
+        if(data.type === "MESSAGE") {
+            const newMessage: Message = {
+              id: Date.now().toString(),
+              text: data.message,
+            sender: 'other',
+            timestamp: new Date(),
+          };
+          setMessages((prev) => [...prev, newMessage]);
+        }
+        else if (data.type === 'NEW_CHAT') {
+          setCurrentChatId(data.chat_id as number);
+          fetchChats()
+        }
       };
 
       ws.current.onclose = () => {
@@ -129,12 +155,17 @@ export function Chat() {
     <div className='chat-body'>
       <ChatsList 
         setCurrentChatId ={setCurrentChatId} 
+        currentChatId={currentChatId}
         setMessages={setMessages} 
         setIsCreatingNewChat={setIsCreatingNewChat} 
         setCurrentUser={setCurrentUser}
+        setChatHeader={setChatHeader}
+        fetchChats={fetchChats}
+        chats={chats}
+        setChats={setChats}
       />
       <div className="chat-container">
-        <h1>Минималистичный Чат</h1>
+        <h5>{chatHeader}</h5>
         <MessageList ref={messagesEndRef} messages={messages} />
         <MessageInput onSend={sendMessage} />
       </div>
@@ -142,4 +173,4 @@ export function Chat() {
   );
 }
 
-export default Chat;
+export default ChatPage;
