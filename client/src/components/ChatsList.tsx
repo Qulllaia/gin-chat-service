@@ -59,17 +59,27 @@ export function ChatsList({setCurrentChatId, currentChatId, setMessages, setCurr
                     return <UserCard user={val} createChatHandler={createChat}></UserCard>
                 })}
             </ParentForm>
-            <button className="btn btn-outline-secondary align-self-stretch m-2" type="button" onClick={()=>setIsChatCreatonOpen(true)}>Создать чат</button>
-            <div className="d-flex flex-column align-items-stretch flex-shrink-0 bg-body-tertiary w-100">
-                <a href="/" className="d-flex align-items-center flex-shrink-0 p-3 link-body-emphasis text-decoration-none border-bottom">
-                    <svg className="bi pe-none me-2" width="30" height="24" aria-hidden="true">
-                        <use href="#bootstrap"></use>
-                    </svg>
-                    <span className="fs-5 fw-semibold">Список чатов</span> 
-                </a>
-                {chats.map((Chat:Chat) => (
-                    <ChatCard key={Chat.id} friend ={Chat} setCurrentChatId={setCurrentChatId} currentChatId={currentChatId} setChatHeader={setChatHeader}/>
-                ))}
+            <div className="d-grid vh-100  w-100" style={{gridTemplateRows: 'auto 1fr'}}>
+                <button 
+                    className="btn btn-outline-secondary m-2" 
+                    type="button" 
+                    onClick={() => setIsChatCreatonOpen(true)}
+                >
+                    Создать чат
+                </button>
+                <div className="chat-list">
+                    <div className="d-flex flex-column align-items-stretch bg-body-tertiary w-100 h-100">
+                        <a href="/" className="d-flex align-items-center flex-shrink-0 p-3 link-body-emphasis text-decoration-none border-bottom">
+                            <svg className="bi pe-none me-2" width="30" height="24" aria-hidden="true">
+                                <use href="#bootstrap"></use>
+                            </svg>
+                            <span className="fs-5 fw-semibold">Список чатов</span> 
+                        </a>
+                        {chats.map((Chat:Chat) => (
+                            <ChatCard key={Chat.id} friend={Chat} setCurrentChatId={setCurrentChatId} currentChatId={currentChatId} setChatHeader={setChatHeader}/>
+                        ))}
+                    </div>
+                </div>
             </div>
         </div>
 
