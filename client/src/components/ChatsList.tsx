@@ -13,7 +13,9 @@ export function ChatsList({setCurrentChatId, currentChatId, setMessages, setCurr
     const [isChatCreationOpen, setIsChatCreatonOpen] = useState<boolean>(false);
 
     const fetchCurrentUsers = async () => {
-        await axios.get('http://localhost:5000/api/user/get/except')
+        await axios.get('http://localhost:5000/api/user/get/except',{
+          withCredentials: true,
+        })
         .then((res) => {
             if(res.data.result){
                 const friendList = res.data.result.map((user: any) => {

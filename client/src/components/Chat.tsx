@@ -19,7 +19,8 @@ export function ChatPage() {
   
   const fetchMEssagesHistory = async () => {
     await axios.get(`http://localhost:5050/api/chat/history/${currentChatId}`, {
-      method: "GET"
+      method: "GET",
+      withCredentials: true,
     }).then((res)=> {
       if(res.status === 200) {
         res.data.result.forEach((element: any) => {
@@ -43,7 +44,11 @@ export function ChatPage() {
   }
 
   const fetchChats = async () => {
-      await axios.get('http://localhost:5050/api/chat/chats').then((res) => {
+      await axios.get('http://localhost:5050/api/chat/chats',
+        {
+          withCredentials: true,
+        }
+      ).then((res) => {
           if(res.data.result){
               const friendList = res.data.result.map((chat: any) => {
                   return {

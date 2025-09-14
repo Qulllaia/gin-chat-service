@@ -54,8 +54,8 @@ func (ac *AuthController) LoginUser(context *gin.Context) {
         jwtToken,
         3600,
         "/",
-        "",
-        true,
+        "localhost",
+        false,
         true,
     )
 
@@ -111,8 +111,8 @@ func (ac *AuthController) RegisterUser(context *gin.Context) {
         jwtToken,
         3600,
         "/",
-        "",
-        true,
+        "localhost",
+        false,
         true,
     )
 
