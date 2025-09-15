@@ -11,7 +11,8 @@ export function ChatPage() {
   const ws = useRef<WebSocket>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate()
-  const [currentChatId, setCurrentChatId] = useState<number>(1);
+  const [currentChatId, setCurrentChatId] = useState<number>(0);
+  const currentChatIdRef = useRef(currentChatId);
   const [currentUser, setCurrentUser] = useState<number>(0)
   const [chatHeader, setChatHeader] = useState<string>('Минималистичный Чат')
   const [isCreatingNewChat, setIsCreatingNewChat] = useState<boolean>(false);
@@ -88,13 +89,15 @@ export function ChatPage() {
       ws.current.onmessage = (event) => {
         const data = JSON.parse(event.data);
         if(data.type === "MESSAGE") {
-            const newMessage: Message = {
-              id: Date.now().toString(),
-              text: data.message,
+          const newMessage: Message = {
+            id: Date.now().toString(),
+            text: data.message,
             sender: 'other',
+            chat_id: data.chat_id,
             timestamp: new Date(),
           };
-          setMessages((prev) => [...prev, newMessage]);
+          if(currentChatIdRef.current === newMessage.chat_id)
+            setMessages((prev) => [...prev, newMessage]);
         }
         else if (data.type === 'NEW_CHAT') {
           setCurrentChatId(data.chat_id as number);
@@ -126,6 +129,7 @@ export function ChatPage() {
   useEffect(()=>{
     setMessages([]);
     fetchMEssagesHistory();
+    currentChatIdRef.current = currentChatId;
   }, [currentChatId])
 
   const sendMessage = (text: string) => {
@@ -150,6 +154,7 @@ export function ChatPage() {
           id: Date.now().toString(),
           text,
           sender: 'user',
+          chat_id: currentChatId,
           timestamp: new Date(),
       };
       setMessages((prev) => [...prev, newMessage]);
@@ -169,7 +174,7 @@ export function ChatPage() {
         chats={chats}
         setChats={setChats}
       />
-      <div className="chat-container">
+      <div className={currentChatId === 0 && currentUser === 0 ? "chat-container-hide" : "chat-container"} >
         <h5>{chatHeader}</h5>
         <MessageList ref={messagesEndRef} messages={messages} />
         <MessageInput onSend={sendMessage} />

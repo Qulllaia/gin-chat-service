@@ -10,7 +10,7 @@ export default function MessageList({ messages, ref }: MessageListProps) {
   return (
     <div ref={ref} className="message-list">
       {messages.map((message) => (
-        <MessageComponent key={message.id} message={message} />
+        <MessageComponent key={message.id +  Math.random().toString(16).slice(2)} message={message} />
       ))}
     </div>
   );

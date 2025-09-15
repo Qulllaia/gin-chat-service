@@ -6,6 +6,7 @@ import (
 	"main/database"
 	"main/database/queries"
 	"main/router"
+	"main/user"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -30,6 +31,7 @@ func main() {
 		panic("CONFIG ERROR")
 	}
     
+	go user.StartUserServer();
 
 	db, err := database.CreateConnection(config);
 	uq := queries.UserQueryConstructor(db);

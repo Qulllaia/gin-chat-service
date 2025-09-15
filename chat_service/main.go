@@ -6,6 +6,7 @@ import (
 	"main/database"
 	"main/database/queries"
 	"main/router"
+	"main/user"
 	"main/websockets"
 	"time"
 
@@ -30,7 +31,15 @@ func main() {
 	if err != nil {
 		panic("CONFIG ERROR")
 	}
+	userServiceAddr := "localhost:50051"
+	server, err := user.ConnectSerivce(userServiceAddr);
 	
+	if err != nil {
+		println(err)
+	}
+	println(server)
+
+
 	db, _ := database.CreateConnection(config);
 	defer db.DB.Close()
 

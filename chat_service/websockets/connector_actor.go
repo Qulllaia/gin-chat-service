@@ -158,6 +158,7 @@ func (a *ConnectorActor) broadcastMessage(message MessageWS, messageType int, co
 			if getter_conn != conn {
 				responseData, err := json.Marshal(map[string]interface{} {
 					"message": message.Message,
+					"chat_id": chat_id,
 					"type": "MESSAGE",
 				})
 				if err = getter_conn.WriteMessage(messageType, []byte(responseData)); err != nil {

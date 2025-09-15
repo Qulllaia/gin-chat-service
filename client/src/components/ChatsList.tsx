@@ -57,9 +57,13 @@ export function ChatsList({setCurrentChatId, currentChatId, setMessages, setCurr
                 isOpen={isChatCreationOpen}
                 setIsOpen={setIsChatCreatonOpen}
             >
-                {users.map((val)=>{
-                    return <UserCard user={val} createChatHandler={createChat}></UserCard>
-                })}
+                <div className="user-list">
+                    <div className="d-flex flex-column align-items-stretch bg-body-tertiary w-100 h-100">
+                        {users.map((val)=>{
+                            return <UserCard user={val} createChatHandler={createChat}></UserCard>
+                        })}
+                    </div>
+                </div>
             </ParentForm>
             <div className="d-grid vh-100  w-100" style={{gridTemplateRows: 'auto 1fr'}}>
                 <button 
