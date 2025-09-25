@@ -16,6 +16,7 @@ func NewUser(router *gin.RouterGroup) *User {
 }
 
 
+
 func (a *User) UserRoutes(controller *controller.Controller) {
 	api := a.UserRouter.Group("user", middleware.AuthMiddleware)
 	{
