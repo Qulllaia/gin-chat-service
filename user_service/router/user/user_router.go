@@ -11,9 +11,15 @@ type User struct {
 	UserRouter *gin.RouterGroup
 }
 
+
+
 func NewUser(router *gin.RouterGroup) *User {
 	return &User{ UserRouter: router};
 }
+
+
+
+
 
 
 func (a *User) UserRoutes(controller *controller.Controller) {
