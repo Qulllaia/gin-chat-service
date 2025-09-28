@@ -49,7 +49,6 @@ func (ac *AuthController) LoginUser(context *gin.Context) {
 		})
 	}
 	
-	
     context.SetCookie(
         "session_token",
         jwtToken,
