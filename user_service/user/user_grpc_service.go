@@ -28,6 +28,7 @@ func (s *Server) GetUser(ctx context.Context, req *UserRequest) (*UserResponse, 
     //     return nil, grpc.Errorf(grpc.Code(nil), "user not found")
     // }
     
+    
     return user, nil
 }
 
