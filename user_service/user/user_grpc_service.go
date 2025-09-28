@@ -20,14 +20,13 @@ func NewServer() *Server {
 }
 
 func (s *Server) GetUser(ctx context.Context, req *UserRequest) (*UserResponse, error) {
-    // log.Printf("Received GetUser request for user_id: %s", req.UserId)
+    log.Printf("Received GetUser request for user_id: %s", req.UserId)
     
     // user, exists := s.users[req.UserId]
     user := &UserResponse {UserId: "12"};
     // if !exists {
     //     return nil, grpc.Errorf(grpc.Code(nil), "user not found")
     // }
-    
     
     return user, nil
 }
