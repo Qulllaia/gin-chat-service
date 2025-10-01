@@ -1,8 +1,12 @@
 package dto
 
+import "github.com/lib/pq"
+
 type ChatListDTO struct {
-	Name *string `db:"name"`
-	ID   int     `db:"id"`
+	Name      *string `db:"name"`
+	ID        int     `db:"id"`
+	Users     pq.Int64Array `db:"users"`
+	Chat_type string  `db:chat_type`
 }
 
 type ChatIDURI struct {

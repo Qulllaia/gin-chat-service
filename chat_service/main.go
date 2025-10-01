@@ -37,14 +37,14 @@ func main() {
 	if err != nil {
 		println(err)
 	}
-	println(server)
+	// println(server)
 
 
 	db, _ := database.CreateConnection(config);
 	defer db.DB.Close()
 
 	
-	cq := queries.ChatQueryConstructor(db);
+	cq := queries.ChatQueryConstructor(db, server);
 	wsq := queries.WSQueryConstructor(db);
 	
 	connectorActor := websockets.NewConnectorActor(wsq)

@@ -31,13 +31,14 @@ func main() {
 		panic("CONFIG ERROR")
 	}
     
-	go user.StartUserServer();
-
+	
 	db, err := database.CreateConnection(config);
 	uq := queries.UserQueryConstructor(db);
 	aq := queries.AuthQueryConstructor(db);
 	controller := controller.NewController(uq, aq);
-
+	
+	go user.StartUserServer(uq);
+	
 	newRouter := router.NewRouter(app);
 
 	newRouter.RegisterRouters(controller, config);
