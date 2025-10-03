@@ -165,7 +165,6 @@ func (a *ConnectorActor) broadcastMessage(message MessageWS, messageType int, co
 					println(err.Error());	
 				}
 			} else {
-				println(chat_id);
 				if err := a.WSQ.InsertMessageIntoChatHistory(chat_id, user_id, string(message.Message)); err != nil {
 					println(err.Error());	
 				}

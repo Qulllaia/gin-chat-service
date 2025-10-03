@@ -5,6 +5,7 @@ import (
 	"main/database"
 	. "main/database/models"
 	"main/user"
+	"strconv"
 )
 
 type ChatQueries struct {
@@ -54,42 +55,57 @@ func (cq *ChatQueries) GetMessageHistory(current_user_id, chat_id int64) ([]Mess
         // LEFT JOIN "user" u on u.id = (SELECT unnest(c.users) EXCEPT SELECT $1)
         // WHERE $1 = ANY(users) 
 
-func (cq *ChatQueries) GetUsersChats(id int) ([]dto.ChatListDTO, error) {
+func (cq *ChatQueries) GetUsersChats(currentId int) ([]dto.ChatListDTO, error) {
     rows, err := cq.DB.Query(`
         SELECT chat_id, chat_type, users
         FROM "Chat" c
         WHERE $1 = ANY(users)
-    `, id)
+    `, currentId)
     if err != nil {
         println(err.Error());
         return nil, err
     }
     defer rows.Close()
-
+    
+    var resultIds map[string]string = make(map[string]string);
     var chats []dto.ChatListDTO
     for rows.Next() {
         var chat dto.ChatListDTO
         if err := rows.Scan(&chat.ID, &chat.Chat_type, &chat.Users); err != nil {
             return nil, err
         }
-        // println(chat.ID);
         if chat.Chat_type == "PRIVATECHAT" {
             for _, i := range chat.Users {
-                if i != int64(id) {
-
-                    userGRPCResponse, err := cq.GetUserInfo(int(i));
-                    if err != nil {
-                        println("Fatal Error to Get User Info with GRPC")
-                        println(err.Error())
-                        return nil, err
-                    } else {
-                        // println(userGRPCResponse.UserId)
-                        chat.Name = &userGRPCResponse.Name;
-                    }
+                if i != int64(currentId) {
+                    // println(chat.ID, i)
+                    resultIds[strconv.Itoa(chat.ID)] = strconv.Itoa(int(i))    
                 } 
             }
+            
         }
         chats = append(chats, chat)
+    }
+    // println(resultIds["40"]);
+    if len(resultIds) > 0 {
+
+        userGRPCResponse, err := cq.GetUserInfo(resultIds);
+        if err != nil {
+            println("Fatal Error to Get User Info with GRPC")
+            println(err.Error())
+            return nil, err
+        } else {
+            
+            for index, i := range chats {
+                chatId := strconv.Itoa(i.ID);
+                val, exists := userGRPCResponse.ChatIdAndUserNames[chatId];
+                // println(val);
+                if exists {
+                    chats[index].Name = &val; 
+                }
+
+            }
+        }
+        
     }
     
     if err = rows.Err(); err != nil {

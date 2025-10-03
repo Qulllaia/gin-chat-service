@@ -2,7 +2,6 @@ package user
 
 import (
 	"context"
-	"strconv"
 	"time"
 
 	"google.golang.org/grpc"
@@ -14,7 +13,7 @@ type Server struct {
 }
 
 func ConnectSerivce(userServiceAddr string) (*Server, error) {
-    // Подключение к UserService
+    
     conn, err := grpc.Dial(userServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
     if err != nil {
         return nil, err
@@ -22,34 +21,22 @@ func ConnectSerivce(userServiceAddr string) (*Server, error) {
     
     userClient := NewUserServiceClient(conn)
 
-
-    // res, err := userClient.GetUser(ctx,  &UserRequest{UserId: "34"})
-    // if err != nil {
-    //     println(res)
-    //     return nil, err
-    // }
-
-    // println(res.UserId);
-    // println(res.state);
-
     return &Server{
         userClient: userClient,
     }, nil
 }
 
-func (s *Server) GetUserInfo(id int) (*UserResponse, error) {
+func (s *Server) GetUserInfo(chatIdAndUserIds map[string]string) (*UserResponse, error) {
     ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
     
     defer cancel()
 
-    res, err  := s.userClient.GetUser(ctx, &UserRequest{UserId: strconv.Itoa(id)})
+    res, err  := s.userClient.GetUser(ctx, &UserRequest{ChatIdAndUserIds: chatIdAndUserIds})
 
     if err != nil {
         println(res)
         return nil, err
     }
-
-    // println(res.UserId);
 
     return res, nil;
 }

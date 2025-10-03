@@ -5,20 +5,12 @@ option go_package = "./user";
 
 service UserService {
   rpc GetUser(UserRequest) returns (UserResponse);
-  rpc CreateUser(CreateUserRequest) returns (UserResponse);
 }
 
 message UserRequest {
-  string user_id = 1;
-}
-
-message CreateUserRequest {
-  string name = 1;
-  string email = 2;
+  map<string, string> ChatIdAndUserIds = 1 ;
 }
 
 message UserResponse {
-  string user_id = 1;
-  string name = 2;
-  string email = 3;
+  map<string, string> ChatIdAndUserNames = 1 ;
 }
