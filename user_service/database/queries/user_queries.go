@@ -4,6 +4,8 @@ import (
 	"main/controller/dto"
 	"main/database"
 	. "main/database/models"
+
+	"github.com/lib/pq"
 )
 
 type UserQuery struct {
@@ -32,6 +34,33 @@ func (uq *UserQuery) GetUserByID(id int) (*User, error) {
         return nil, err
     }
     return &user, nil
+}
+
+func (uq *UserQuery) GetUserNamesByIDs(ids []int) (map[int]string, error) {
+
+    rows, err := uq.DB.Query(`
+        SELECT id, name 
+        FROM "user" 
+        WHERE id = ANY($1)
+    `, pq.Array(ids));
+    
+    userIdUserName := make(map[int]string);
+
+    if err != nil {
+        return nil, err
+    }
+
+    defer rows.Close()
+
+    for rows.Next(){
+        var user User
+        if err := rows.Scan(&user.ID, &user.Name); err != nil {
+            return nil, err
+        } 
+        userIdUserName[user.ID] = user.Name;
+    }
+
+    return userIdUserName, nil
 }
 
 func (uq *UserQuery) GetAllUsers() ([]User, error) {

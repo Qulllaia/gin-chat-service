@@ -24,15 +24,24 @@ func NewServer(uq *queries.UserQuery) *Server {
 }
 
 func (s *Server) GetUser(ctx context.Context, req *UserRequest) (*UserResponse, error) {
-    var chatIdUserName map[string]string = make(map[string]string); 
+    var chatIdUserName map[string]string = make(map[string]string);
+    userIdsList := make([]int, 0);
+
+    for _, userID := range req.ChatIdAndUserIds {
+        intUserID, _ := strconv.Atoi(userID);
+        userIdsList = append(userIdsList, intUserID)
+    }
+
+    userNamesData, err := s.uq.GetUserNamesByIDs(userIdsList);
+    if err != nil {
+        println(err)
+        return nil, err
+    }
+
+
     for chatId, userId  := range req.ChatIdAndUserIds {
         intId, _ := strconv.Atoi(userId);
-        userData, err := s.uq.GetUserByID(intId);
-        if err != nil {
-            println(err)
-            return nil, err
-        }
-        chatIdUserName[chatId] = userData.Name;
+        chatIdUserName[chatId] = userNamesData[intId];
     }
 
 
