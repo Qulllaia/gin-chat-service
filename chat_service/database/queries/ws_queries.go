@@ -61,6 +61,6 @@ func (wsq *WSQueries) CreateChatWithMessage(user_ids ...int) (error, int) {
 		VALUES($1, $2, $3) RETURNING chat_id`, 
 		userIDsArray, nil, "PRIVATECHAT",
 	).Scan(&chat_id);
-	// println(chat_id);
+
 	return err, chat_id;
 }

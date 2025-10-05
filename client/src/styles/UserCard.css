@@ -2,8 +2,19 @@
     background-color: white;
     border-radius: 10px;
     margin-top: 0.5rem;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    width: 100%;
+    padding: 10px;
 }
 
 .user-p {
     font-size: 2rem;
+    grid-column: 2;
+    justify-self: center;
+}
+.checkbox {
+    grid-column: 3;
+    justify-self: end;
 }

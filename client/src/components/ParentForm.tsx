@@ -9,21 +9,16 @@ type ModalProps = {
 };
 
 export const ParentForm: React.FC<ModalProps> = ({children, isDialog, isOpen, setIsOpen}) => {
-    
-    useEffect(() => {
-        const element = document.getElementById('form');
-        if(element){
-            if (isOpen) {
-                element.style.visibility = 'visible';
-            } else {
-                element.style.visibility = 'hidden';
-            }
+    const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+        if (e.target === e.currentTarget) {
+            setIsOpen(false);
         }
-    }, [isOpen]);
+    };
 
     return (
         <div>
-            <div id="form" className="background">
+            {isOpen &&
+            <div id="form" className="background" onClick={(e) => handleBackdropClick(e)}>
                 <div className="content">
                     {
                         isDialog && 
@@ -36,7 +31,7 @@ export const ParentForm: React.FC<ModalProps> = ({children, isDialog, isOpen, se
                     }
                     {children}
                 </div>
-            </div>
+            </div>}
         </div>
     )
 }

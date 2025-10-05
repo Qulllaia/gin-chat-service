@@ -8,9 +8,11 @@ import { useNavigate } from "react-router-dom";
 
 export function ChatsList({setCurrentChatId, currentChatId, setMessages, setCurrentUser, setIsCreatingNewChat, setChatHeader, fetchChats, chats, setChats}:any) {
     const [users, setUsers] = useState<User[]>([])
+    const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
     const navigate = useNavigate()
 
     const [isChatCreationOpen, setIsChatCreatonOpen] = useState<boolean>(false);
+    const [isMultiChatCreationOpen, setIsMultiChatCreationOpen] = useState<boolean>(false);
 
     const fetchCurrentUsers = async () => {
         await axios.get('http://localhost:5000/api/user/get/except',{
@@ -35,6 +37,16 @@ export function ChatsList({setCurrentChatId, currentChatId, setMessages, setCurr
         });
     }
 
+    const handleCheckboxChange = (value: string) => {
+        setSelectedUsers(prev => {
+            if (prev.includes(value)) {
+                return prev.filter(item => item !== value);
+            } else {
+                return [...prev, value];
+            }
+        });
+    };
+
     const createChat = async (user_id: number) => {
         setMessages([])
         setIsChatCreatonOpen(false);
@@ -42,13 +54,19 @@ export function ChatsList({setCurrentChatId, currentChatId, setMessages, setCurr
         setCurrentUser(user_id)
     }
 
+    const createMultipleChat = () => {
+        setMessages([])
+        setIsChatCreatonOpen(false);
+        setIsCreatingNewChat(true);
+    }
+
     useEffect(()=> {
         fetchChats()
     },[])
 
     useEffect(()=> {
-        if(isChatCreationOpen) fetchCurrentUsers()
-    },[isChatCreationOpen])
+        if(isChatCreationOpen || isMultiChatCreationOpen) fetchCurrentUsers()
+    },[isChatCreationOpen, isMultiChatCreationOpen])
 
     return (
         <div className="list">
@@ -60,19 +78,60 @@ export function ChatsList({setCurrentChatId, currentChatId, setMessages, setCurr
                 <div className="user-list">
                     <div className="d-flex flex-column align-items-stretch bg-body-tertiary w-100 h-100">
                         {users.map((val)=>{
-                            return <UserCard user={val} createChatHandler={createChat}></UserCard>
+                            return <UserCard 
+                                user={val} 
+                                createChatHandler = {createChat} 
+                                handleCheckboxChange={handleCheckboxChange} 
+                                checkboxAvaible = {false}
+                            ></UserCard>
+                        })}
+                    </div>
+                </div>
+            </ParentForm>
+            <ParentForm
+                isDialog ={true}
+                isOpen={isMultiChatCreationOpen}
+                setIsOpen={setIsMultiChatCreationOpen}
+            >
+                <div className="user-list">
+                    <button
+                        className="btn btn-outline-secondary m-2" 
+                        onClick={() => {
+                            setIsMultiChatCreationOpen(false);
+                            createMultipleChat()
+                        }}
+                    >
+                        Создать чат с выбранными пользователями
+                    </button>
+                    <div className="d-flex flex-column align-items-stretch bg-body-tertiary w-100 h-100">
+                        {users.map((val)=>{
+                            return <UserCard 
+                                user={val} 
+                                createChatHandler = {createChat} 
+                                handleCheckboxChange={handleCheckboxChange} 
+                                checkboxAvaible = {true}
+                            ></UserCard>
                         })}
                     </div>
                 </div>
             </ParentForm>
             <div className="d-grid vh-100  w-100" style={{gridTemplateRows: 'auto 1fr'}}>
-                <button 
-                    className="btn btn-outline-secondary m-2" 
-                    type="button" 
-                    onClick={() => setIsChatCreatonOpen(true)}
-                >
-                    Создать чат
-                </button>
+                <div className="buttons-group d-grid gap-2" style={{gridTemplateColumns: '1fr 1fr'}}>
+                    <button 
+                        className="btn btn-outline-secondary m-2" 
+                        type="button" 
+                        onClick={() => setIsChatCreatonOpen(true)}
+                    >
+                        Написать пользователю
+                    </button>
+                    <button 
+                        className="btn btn-outline-secondary m-2" 
+                        type="button" 
+                        onClick={() => setIsMultiChatCreationOpen(true)}
+                    >
+                        Создать чат
+                    </button>
+                </div>
                 <div className="chat-list">
                     <div className="d-flex flex-column align-items-stretch bg-body-tertiary w-100 h-100">
                         <a href="/" className="d-flex align-items-center flex-shrink-0 p-3 link-body-emphasis text-decoration-none border-bottom">

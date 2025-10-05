@@ -44,17 +44,6 @@ func (cq *ChatQueries) GetMessageHistory(current_user_id, chat_id int64) ([]Mess
 	return messages, nil;
 }
 
-        // SELECT chat_id,
-
-        //     CASE 
-        //         WHEN c.chat_type = 'PRIVATECHAT' THEN u.name 
-        //         ELSE c.name 
-        //     END AS name
-
-        // FROM "Chat" c
-        // LEFT JOIN "user" u on u.id = (SELECT unnest(c.users) EXCEPT SELECT $1)
-        // WHERE $1 = ANY(users) 
-
 func (cq *ChatQueries) GetUsersChats(currentId int) ([]dto.ChatListDTO, error) {
     rows, err := cq.DB.Query(`
         SELECT chat_id, chat_type, users
@@ -77,7 +66,6 @@ func (cq *ChatQueries) GetUsersChats(currentId int) ([]dto.ChatListDTO, error) {
         if chat.Chat_type == "PRIVATECHAT" {
             for _, i := range chat.Users {
                 if i != int64(currentId) {
-                    // println(chat.ID, i)
                     resultIds[strconv.Itoa(chat.ID)] = strconv.Itoa(int(i))    
                 } 
             }
@@ -85,7 +73,7 @@ func (cq *ChatQueries) GetUsersChats(currentId int) ([]dto.ChatListDTO, error) {
         }
         chats = append(chats, chat)
     }
-    // println(resultIds["40"]);
+
     if len(resultIds) > 0 {
 
         userGRPCResponse, err := cq.GetUserInfo(resultIds);
@@ -98,7 +86,7 @@ func (cq *ChatQueries) GetUsersChats(currentId int) ([]dto.ChatListDTO, error) {
             for index, i := range chats {
                 chatId := strconv.Itoa(i.ID);
                 val, exists := userGRPCResponse.ChatIdAndUserNames[chatId];
-                // println(val);
+                
                 if exists {
                     chats[index].Name = &val; 
                 }
