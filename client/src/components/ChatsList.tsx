@@ -8,7 +8,7 @@ import { useNavigate } from "react-router-dom";
 
 export function ChatsList({setCurrentChatId, currentChatId, setMessages, setCurrentUser, setIsCreatingNewChat, setChatHeader, fetchChats, chats, setChats}:any) {
     const [users, setUsers] = useState<User[]>([])
-    const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+    const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
     const navigate = useNavigate()
 
     const [isChatCreationOpen, setIsChatCreatonOpen] = useState<boolean>(false);
@@ -37,7 +37,7 @@ export function ChatsList({setCurrentChatId, currentChatId, setMessages, setCurr
         });
     }
 
-    const handleCheckboxChange = (value: string) => {
+    const handleCheckboxChange = (value: number) => {
         setSelectedUsers(prev => {
             if (prev.includes(value)) {
                 return prev.filter(item => item !== value);
@@ -54,10 +54,22 @@ export function ChatsList({setCurrentChatId, currentChatId, setMessages, setCurr
         setCurrentUser(user_id)
     }
 
-    const createMultipleChat = () => {
+    const createMultipleChat = async() => {
         setMessages([])
         setIsChatCreatonOpen(false);
         setIsCreatingNewChat(true);
+
+        await axios.post('http://localhost:5050/api/chat/chats',{
+            IDs: selectedUsers,
+        },
+        {
+          withCredentials: true,
+        })
+        .catch((e)=> {
+            if(e.status === 401){
+                navigate('/auth', { replace: true});
+            }
+        });
     }
 
     useEffect(()=> {

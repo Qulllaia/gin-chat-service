@@ -3,7 +3,7 @@ import '../styles/UserCard.css'
 interface UserCardProps {
     user: User
     createChatHandler: (user_id: number) =>  Promise<void>
-    handleCheckboxChange: (value: string) => void,
+    handleCheckboxChange: (value: number) => void,
     checkboxAvaible: boolean,
 }
 
@@ -22,7 +22,7 @@ export function UserCard({user, createChatHandler, handleCheckboxChange, checkbo
                         value="" 
                         id="flexCheckDefault" 
                         onChange={
-                            ()=> checkboxAvaible ? handleCheckboxChange(user.id.toString()) : null
+                            ()=> checkboxAvaible ? handleCheckboxChange(user.id) : null
                         }
                     ></input>
                     <label className="form-check-label" htmlFor="flexCheckDefault"></label>

@@ -16,3 +16,7 @@ type ChatIDURI struct {
 type UserIDURI struct {
 	ID int `uri:"id""`
 }
+
+type UsersIDList struct {
+	IDs []int64 `json: "ids"`
+}

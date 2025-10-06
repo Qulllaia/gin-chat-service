@@ -21,5 +21,6 @@ func (a *Chat) ChatRoutes(controller *controller.Controller) {
 		api.GET("/history/:id", controller.Chat.GetHistoryList)
 		api.GET("/ws", controller.WS.WebsocketsInit)
 		api.GET("/chats", controller.Chat.GetUsersChats)
+		api.POST("chats", controller.Chat.CreateChatWithMultipleUsers)
 	}
 }

@@ -6,6 +6,8 @@ import (
 	. "main/database/models"
 	"main/user"
 	"strconv"
+
+	"github.com/lib/pq"
 )
 
 type ChatQueries struct {
@@ -101,4 +103,16 @@ func (cq *ChatQueries) GetUsersChats(currentId int) ([]dto.ChatListDTO, error) {
     }
     
     return chats, nil
+}
+
+func(cq *ChatQueries) CreateMultipleUserChat(ids []int64) (error, int64) {
+    var resultChatId int64;
+    userIDsArray := pq.Array(ids);
+    err := cq.DB.QueryRow(
+		`INSERT INTO "Chat" (users, name, chat_type) 
+		VALUES($1, $2, $3) RETURNING chat_id`, 
+		userIDsArray, "grupchat sample", "GROUPCHAT",
+	).Scan(&resultChatId);
+    
+    return err, resultChatId;
 }

@@ -1,6 +1,7 @@
 package chat_controller
 
 import (
+	"fmt"
 	"main/controller/utils"
 	"main/database/queries"
 	"net/http"
@@ -66,4 +67,27 @@ func (cc *ChatController) GetUsersChats(context *gin.Context) {
 			"result": users,
 		})
 	}
+}
+
+func (cc *ChatController) CreateChatWithMultipleUsers(context *gin.Context) {
+	claims, err := utils.ExtractClaimsFromCookie(context);
+	
+	fmt.Println(claims);
+
+	var idsJson UsersIDList;
+	
+	if err = context.ShouldBindBodyWithJSON(&idsJson); err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{
+			"error": "CreateChatWithMultipleUsers",
+			"message": err.Error(),
+		})
+	}
+
+	err, resultId := cc.CQ.CreateMultipleUserChat(append(idsJson.IDs, int64(claims.UserID)))
+
+	context.JSON(http.StatusCreated, gin.H{
+		"done": true,
+		"result": resultId,
+	})
+	
 }
