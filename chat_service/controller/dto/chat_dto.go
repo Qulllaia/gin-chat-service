@@ -19,4 +19,5 @@ type UserIDURI struct {
 
 type UsersIDList struct {
 	IDs []int64 `json: "ids"`
+	GroupName string `json: "GroupName"`
 }

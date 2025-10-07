@@ -6,11 +6,24 @@ import { ParentForm } from "./ParentForm";
 import UserCard from "./UserCard";
 import { useNavigate } from "react-router-dom";
 
-export function ChatsList({setCurrentChatId, currentChatId, setMessages, setCurrentUser, setIsCreatingNewChat, setChatHeader, fetchChats, chats, setChats}:any) {
+export function ChatsList({
+        setCurrentChatId, 
+        currentChatId, 
+        setMessages, 
+        setCurrentUser, 
+        setIsCreatingNewChat, 
+        setChatHeader, 
+        fetchChats, 
+        chats, 
+        setChats,
+        sendMultipleChatCreationNotify
+    }:any) {
+   
     const [users, setUsers] = useState<User[]>([])
     const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
     const navigate = useNavigate()
-
+    
+    const [groupName, setGroupName] = useState<string>('');
     const [isChatCreationOpen, setIsChatCreatonOpen] = useState<boolean>(false);
     const [isMultiChatCreationOpen, setIsMultiChatCreationOpen] = useState<boolean>(false);
 
@@ -21,7 +34,6 @@ export function ChatsList({setCurrentChatId, currentChatId, setMessages, setCurr
         .then((res) => {
             if(res.data.result){
                 const friendList = res.data.result.map((user: any) => {
-                    console.log(user)
                     return {
                         id: user.id,
                         name: user.name,
@@ -60,16 +72,22 @@ export function ChatsList({setCurrentChatId, currentChatId, setMessages, setCurr
         setIsCreatingNewChat(true);
 
         await axios.post('http://localhost:5050/api/chat/chats',{
-            IDs: selectedUsers,
+            IDs: selectedUsers, 
+            GroupName: groupName
         },
         {
           withCredentials: true,
+        })
+        .then(()=> {
+            sendMultipleChatCreationNotify(selectedUsers)
         })
         .catch((e)=> {
             if(e.status === 401){
                 navigate('/auth', { replace: true});
             }
         });
+        fetchChats();
+        setGroupName('');
     }
 
     useEffect(()=> {
@@ -115,6 +133,15 @@ export function ChatsList({setCurrentChatId, currentChatId, setMessages, setCurr
                     >
                         Создать чат с выбранными пользователями
                     </button>
+                    
+                    <div className="form-floating"> 
+                        <input type="text" className="form-control mb-2" id="floatingGroupName"  
+                            onChange={(event)=> {
+                                setGroupName(event.target.value);
+                            }}/> 
+                        <label htmlFor="floatingGroupName">Имя группы</label> 
+                    </div>
+                   
                     <div className="d-flex flex-column align-items-stretch bg-body-tertiary w-100 h-100">
                         {users.map((val)=>{
                             return <UserCard 
@@ -153,7 +180,13 @@ export function ChatsList({setCurrentChatId, currentChatId, setMessages, setCurr
                             <span className="fs-5 fw-semibold">Список чатов</span> 
                         </a>
                         {chats.map((Chat:Chat) => (
-                            <ChatCard key={Chat.id} friend={Chat} setCurrentChatId={setCurrentChatId} currentChatId={currentChatId} setChatHeader={setChatHeader}/>
+                            <ChatCard 
+                                key={Chat.id} 
+                                friend={Chat} 
+                                setCurrentChatId={setCurrentChatId} 
+                                currentChatId={currentChatId} 
+                                setChatHeader={setChatHeader}
+                            />
                         ))}
                     </div>
                 </div>

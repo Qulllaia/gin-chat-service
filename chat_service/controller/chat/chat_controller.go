@@ -1,7 +1,6 @@
 package chat_controller
 
 import (
-	"fmt"
 	"main/controller/utils"
 	"main/database/queries"
 	"net/http"
@@ -72,8 +71,6 @@ func (cc *ChatController) GetUsersChats(context *gin.Context) {
 func (cc *ChatController) CreateChatWithMultipleUsers(context *gin.Context) {
 	claims, err := utils.ExtractClaimsFromCookie(context);
 	
-	fmt.Println(claims);
-
 	var idsJson UsersIDList;
 	
 	if err = context.ShouldBindBodyWithJSON(&idsJson); err != nil {
@@ -83,7 +80,7 @@ func (cc *ChatController) CreateChatWithMultipleUsers(context *gin.Context) {
 		})
 	}
 
-	err, resultId := cc.CQ.CreateMultipleUserChat(append(idsJson.IDs, int64(claims.UserID)))
+	err, resultId := cc.CQ.CreateMultipleUserChat(append(idsJson.IDs, int64(claims.UserID)), idsJson.GroupName)
 
 	context.JSON(http.StatusCreated, gin.H{
 		"done": true,

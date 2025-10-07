@@ -17,4 +17,6 @@ export interface User {
 }
 
 export const NEW_CHAT = 'NEW_CHAT'
+export const NEW_MULTIPLE_CHAT = 'NEW_MULTIPLE_CHAT'
 export const MESSAGE = 'MESSAGE'
+

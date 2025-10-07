@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
-import { Chat, MESSAGE, Message, NEW_CHAT } from '../types';
+import { Chat, MESSAGE, Message, NEW_CHAT, NEW_MULTIPLE_CHAT } from '../types';
 import { ChatsList } from './ChatsList';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
@@ -103,6 +103,9 @@ export function ChatPage() {
           setCurrentChatId(data.chat_id as number);
           fetchChats()
         }
+        else if (data.type === "NEW_MULTIPLE_CHAT") {
+          fetchChats()
+        }
       };
 
       ws.current.onclose = () => {
@@ -161,6 +164,15 @@ export function ChatPage() {
     }
   };
 
+  const sendMultipleChatCreationNotify = (userIds: number[]) => {
+      if (ws.current) {
+          ws.current.send(JSON.stringify({
+            type: NEW_MULTIPLE_CHAT,
+            user_ids: userIds
+          }));
+          setIsCreatingNewChat(false);
+        }
+      }
   return (
     <div className='chat-body'>
       <ChatsList 
@@ -173,6 +185,7 @@ export function ChatPage() {
         fetchChats={fetchChats}
         chats={chats}
         setChats={setChats}
+        sendMultipleChatCreationNotify = {sendMultipleChatCreationNotify}
       />
       <div className={currentChatId === 0 && currentUser === 0 ? "chat-container-hide" : "chat-container"} >
         <h5>{chatHeader}</h5>
