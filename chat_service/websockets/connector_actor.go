@@ -57,7 +57,7 @@ func (a *ConnectorActor) handleMessage(msg MessageWS, messageType int, conn *web
 			a.createChatWithMessage(msg, conn, messageType);
 			a.broadcastMessage(msg, messageType, conn);
 		case "NEW_MULTIPLE_CHAT":
-			a.broadcastChatCreationNotify(msg, messageType)
+			a.broadcastChatCreationNotify(msg, messageType, conn);
 		}
 }
 
@@ -70,50 +70,24 @@ func (a *ConnectorActor) createChatWithMessage(msg MessageWS, conn *websocket.Co
 	if err != nil {
 		println("Error while creating a chat", err.Error());
 	}
-
-	responseData := map[string]interface{} {
-		"type": "NEW_CHAT",
-		"chat_id": chat_id,
-	}
-
-	chatCreationResponse, err := json.Marshal(responseData);
-
+ 
 	if err != nil {
 		println("Ошибка формирования ответа при создании нового чата", err.Error())
 	}
 
 	a.WSQ.InsertMessageIntoChatHistory(chat_id, current_user_id, msg.Message);
 
-    a.clientsMu.Lock()
-    defer a.clientsMu.Unlock()
-
-	var current_user User = User{ ID: current_user_id}
-
-	if err := a.WSQ.GetUserChatList(current_user_id, &current_user); err != nil {
-		println("GetUserChatListError", err.Error())
-	}
-	
-    a.user_id_conns_with_chat_ids[current_user_id] = UserWSData{
-		chat_ids: current_user.Chat_list,
-		ws: conn,
-	}
-
-	conn.WriteMessage(messageType, []byte(chatCreationResponse))
+	a.createChatContext(current_user_id, messageType, conn, &map[string]interface{} {
+		"type": "NEW_CHAT",
+		"chat_id": chat_id,
+	},)
 
 	if toUserData, exists := a.user_id_conns_with_chat_ids[to_user_id]; exists  {
-		toUserConn := toUserData.ws;
-
-		var to_user User = User{ ID: to_user_id}
-
-		if err := a.WSQ.GetUserChatList(to_user_id, &to_user); err != nil {
-			println("GetUserChatListError", err.Error())
-		}
 		
-		a.user_id_conns_with_chat_ids[to_user_id] = UserWSData{
-			chat_ids: to_user.Chat_list,
-			ws: toUserConn,
-		}
-		toUserConn.WriteMessage(messageType, []byte(chatCreationResponse))
+		a.createChatContext(to_user_id, messageType, toUserData.ws, &map[string]interface{} {
+			"type": "NEW_CHAT",
+			"chat_id": chat_id,
+		},)
 	}
 }
 
@@ -175,31 +149,34 @@ func (a *ConnectorActor) broadcastMessage(message MessageWS, messageType int, co
 	}
 }
 
-func (a *ConnectorActor) broadcastChatCreationNotify(message MessageWS, messageType int) {
+func (a *ConnectorActor) broadcastChatCreationNotify(message MessageWS, messageType int, conn *websocket.Conn) {
+
+	current_user_id := a.conns_to_user_ids[conn];
+
+	a.createChatContext(current_user_id, messageType, conn, nil)
+	
 	for _, value := range message.User_ids {
 		if val, exists := a.user_id_conns_with_chat_ids[value]; exists {
-			var to_user User = User{ ID: value}
-
-			if err := a.WSQ.GetUserChatList(value, &to_user); err != nil {
-				println("GetUserChatListError", err.Error())
-			}
-			
-			a.user_id_conns_with_chat_ids[value] = UserWSData{
-				chat_ids: to_user.Chat_list,
-				ws: val.ws,
-			}
-
-			responseData, err := json.Marshal(map[string]interface{} {
+			a.createChatContext(value, messageType, val.ws, &map[string]interface{}{
 				"type": "NEW_MULTIPLE_CHAT",
 			})
+		}
+	}
+}
 
-			if err != nil {
-				println(err.Error())
-			}
+func (a *ConnectorActor) createChatContext(user_id int, messageType int, conn *websocket.Conn, response_data *map[string]interface{}) {
 
-			if err = val.ws.WriteMessage(messageType, responseData); err != nil {
-				println(err.Error());	
-			}
+	a.AddClient(conn, user_id)
+
+	if response_data != nil {
+		responseData, err := json.Marshal(response_data)
+
+		if err != nil {
+			println(err.Error())
+		}
+
+		if err = conn.WriteMessage(messageType, responseData); err != nil {
+			println(err.Error());	
 		}
 	}
 }
