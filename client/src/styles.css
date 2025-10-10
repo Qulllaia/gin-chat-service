@@ -14,6 +14,9 @@
 }
 
 .chat-container {
+  background-size: cover; /* заполняет весь контейнер без искажений */
+  background-position: center; /* центрирует изображение */
+  background-repeat: no-repeat;
   flex: 0 0 70%;
   border: 1px solid #ddd;
   border-radius: 8px;
@@ -132,4 +135,9 @@ h1 {
 }
 .user-list {
   max-height: 40rem;
+} 
+.chat-header-panel{
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
 }

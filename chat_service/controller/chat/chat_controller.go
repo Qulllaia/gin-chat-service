@@ -8,7 +8,10 @@ import (
 	"main/database/queries"
 	"main/redis"
 	"net/http"
+	"path/filepath"
 	"strconv"
+	"strings"
+	"time"
 
 	. "main/controller/dto"
 
@@ -143,6 +146,52 @@ func (cc *ChatController) CreateChatWithMultipleUsers(context *gin.Context) {
 	context.JSON(http.StatusCreated, gin.H{
 		"done": true,
 		"result": resultId,
-	})
+	})		
+}
+
+func (cc *ChatController) SetBackGround(context *gin.Context) {
+	file, err := context.FormFile("image");
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H {
+			"error": err.Error(),
+		})
+	}
 	
+	allowedTypes := map[string]bool{
+		".jpg":  true,
+		".jpeg": true,
+		".png":  true,
+		".gif":  true,
+	}
+	
+	ext := filepath.Ext(file.Filename)
+	if !allowedTypes[ext] {
+		context.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid file type",
+		})
+		return
+	}
+	timestamp := time.Now().Format("2006-01-02_15-04-05")
+	filename := fmt.Sprintf("%s_%s", timestamp, filepath.Base(file.Filename))
+
+	filename = strings.ReplaceAll(filename, " ", "_")
+    filename = strings.ReplaceAll(filename, ":", "-")
+    
+	filePath := filepath.Join("./static/background", filename)
+	
+	if err := context.SaveUploadedFile(file, filePath); err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	imageURL := fmt.Sprintf("/background/%s", filename)
+	
+	context.JSON(http.StatusOK, gin.H{
+		"message":   "Image uploaded successfully",
+		"filename":  filename,
+		"url":       imageURL,
+		"full_url":  context.Request.Host + imageURL,
+	})
 }

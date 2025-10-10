@@ -5,6 +5,14 @@ import { Chat, MESSAGE, Message, NEW_CHAT, NEW_MULTIPLE_CHAT } from '../types';
 import { ChatsList } from './ChatsList';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { ParentForm } from './ParentForm';
+
+interface PreviewItem {
+  id: string;
+  url: string;
+  name: string;
+  file: File;
+}
 
 export function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -16,8 +24,76 @@ export function ChatPage() {
   const [currentUser, setCurrentUser] = useState<number>(0)
   const [chatHeader, setChatHeader] = useState<string>('Минималистичный Чат')
   const [isCreatingNewChat, setIsCreatingNewChat] = useState<boolean>(false);
-  const [chats, setChats] = useState<Chat[]>([])
-  
+  const [chats, setChats] = useState<Chat[]>([]) 
+  const [isBackgroundUpdateOpen, setIsBackgroundUpdateOpen] = useState<boolean>(false);
+  const [backgroundUrl, setBackgroundUrl] = useState<string>('');
+
+  const [previews, setPreviews] = useState<PreviewItem[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Обработчик изменения input
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
+    if (!e.target.files) return;
+    
+    const files = Array.from(e.target.files);
+    createPreviews(files);
+  };
+
+  // Создание превью
+  const createPreviews = (files: File[]): void => {
+    const newPreviews: PreviewItem[] = [];
+    const imageFiles = files.filter(file => file.type.startsWith('image/'));
+
+    if (imageFiles.length === 0) return;
+
+    let processedCount = 0;
+
+    imageFiles.forEach(file => {
+      const reader = new FileReader();
+      
+      reader.onload = (e: ProgressEvent<FileReader>) => {
+        if (!e.target?.result) return;
+
+        newPreviews.push({
+          id: Math.random().toString(36).substr(2, 9),
+          url: e.target.result as string,
+          name: file.name,
+          file: file
+        });
+
+        processedCount++;
+
+        // Когда все файлы прочитаны
+        if (processedCount === imageFiles.length) {
+          setPreviews(newPreviews);
+        }
+      };
+      
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // Проверка существующих файлов при монтировании
+  useEffect(() => {
+    if (fileInputRef.current && fileInputRef.current.files && fileInputRef.current.files.length > 0) {
+      createPreviews(Array.from(fileInputRef.current.files));
+    }
+  }, []);
+
+  const removePreview = (id: string): void => {
+    setPreviews(prev => prev.filter(item => item.id !== id));
+    
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const getFileSize = (bytes: number): string => {
+    if (bytes < 1024) return bytes + ' bytes';
+    else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+    else return (bytes / 1048576).toFixed(1) + ' MB';
+  };
+
   const fetchMEssagesHistory = async () => {
     await axios.get(`http://localhost:5050/api/chat/history/${currentChatId}`, {
       method: "GET",
@@ -187,8 +263,92 @@ export function ChatPage() {
         setChats={setChats}
         sendMultipleChatCreationNotify = {sendMultipleChatCreationNotify}
       />
-      <div className={currentChatId === 0 && currentUser === 0 ? "chat-container-hide" : "chat-container"} >
-        <h5>{chatHeader}</h5>
+      <div className={currentChatId === 0 && currentUser === 0 ? "chat-container-hide" : "chat-container"}  id = 'background-div'>
+        <div className='chat-header-panel'>
+          <h5>{chatHeader}</h5>
+          <button className="buttons-group d-grid gap-2" onClick={()=>{
+            setIsBackgroundUpdateOpen(true);
+          }}>Изменить фон чата</button>
+        </div>
+        <ParentForm isDialog={true} setIsOpen={setIsBackgroundUpdateOpen} isOpen ={isBackgroundUpdateOpen}>
+          <div>
+              <h1 className="h3 mb-3 fw-normal">Вставьте картинку</h1> 
+              <div className="form-floating"> 
+                  <input type="file" className="form-control mb-2" id="floatingImage" placeholder="Password"  
+                    ref={fileInputRef}
+                    multiple
+                    accept="image/*"
+                    onChange={handleFileChange}
+                  /> 
+              </div>
+              <div className="image-upload"> 
+              <div className="preview-grid">
+                {previews.map(preview => (
+                  <div key={preview.id} className="preview-item">
+                    <img 
+                      src={preview.url} 
+                      alt={preview.name}
+                      className="preview-image"
+                    />
+                    <div className="preview-info">
+                      <div className="file-name">{preview.name}</div>
+                      <div className="file-size">{getFileSize(preview.file.size)}</div>
+                    </div>
+                    <button 
+                      onClick={() => removePreview(preview.id)}
+                      className="buttons-group d-grid gap-2"
+                      type="button"
+                    >
+                      Удалить
+                    </button>
+                    <button 
+                      onClick={() => {
+                        const fileInput = document.getElementById('floatingImage') as HTMLInputElement;
+                        const file = fileInput.files![0];
+
+                        const formData = new FormData();
+                        formData.append('image', file); 
+
+                        axios.post('http://localhost:5050/api/chat/background', formData,
+                        {
+                          withCredentials: true,
+                          headers: {
+                              'Content-Type': 'multipart/form-data',
+                          },
+                        })
+                        .then((res)=> {
+                          setIsBackgroundUpdateOpen(false)
+                          const fullImageUrl = res.data.full_url;
+                          
+                          const backgroundDiv = document.getElementById('background-div') as HTMLElement;
+                          backgroundDiv.style.backgroundImage = `url(http://${fullImageUrl})`;
+                          backgroundDiv.style.backgroundSize = 'cover';
+                          backgroundDiv.style.backgroundPosition = 'center';
+                          backgroundDiv.style.backgroundRepeat = 'no-repeat';
+                          
+                          setBackgroundUrl(fullImageUrl); 
+                        })
+                        .catch((e)=> { 
+                          console.log(e); 
+                        });
+                      }}
+                      className="buttons-group d-grid gap-2"
+                      type="button"
+                    >
+                     Изменить фон 
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              {previews.length === 0 && (
+                <div className="empty-state">
+                  Изображения не выбраны
+                </div>
+              )}
+            </div> 
+          </div>
+        </ParentForm>
         <MessageList ref={messagesEndRef} messages={messages} />
         <MessageInput onSend={sendMessage} />
       </div>

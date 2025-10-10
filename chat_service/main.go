@@ -18,6 +18,8 @@ import (
 func main() {
 	app := gin.Default();
 
+    app.Static("/background", "./static/background")
+
 	app.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"http://localhost:3000"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"},
@@ -38,7 +40,6 @@ func main() {
 	if err != nil {
 		println(err)
 	}
-	// println(server)
 
 	redisConnection := redis.NewRedisConnector();
 	defer redisConnection.Close();

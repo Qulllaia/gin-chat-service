@@ -22,5 +22,6 @@ func (a *Chat) ChatRoutes(controller *controller.Controller) {
 		api.GET("/ws", controller.WS.WebsocketsInit)
 		api.GET("/chats", controller.Chat.GetUsersChats)
 		api.POST("chats", controller.Chat.CreateChatWithMultipleUsers)
+		api.POST("background", controller.Chat.SetBackGround)
 	}
 }
