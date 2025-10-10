@@ -53,16 +53,6 @@ export function Auth() {
             isOpen={true}
             setIsOpen={()=>{}}
         >
-            {/* <p>Authorisation</p>
-            <input onChange={(event)=> {
-                setName(event.target.value);
-            }}></input>
-            <input type="password" onChange={(event)=> {
-                setPassword(event.target.value);
-            }}></input>
-            <br/>
-            <button onClick={loginHandler}>Sign in</button>
-            <button onClick={registrationHandler}>Sign up</button> */}
             <form> 
                 {/* <img className="mb-4" src="/docs/5.3/assets/brand/bootstrap-logo.svg" alt="" width="72" height="57">  */}
                 <h1 className="h3 mb-3 fw-normal">Please sign in</h1> 

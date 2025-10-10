@@ -1,9 +1,14 @@
 package chat_controller
 
 import (
+	"encoding/json"
+	"fmt"
+	"main/controller/dto"
 	"main/controller/utils"
 	"main/database/queries"
+	"main/redis"
 	"net/http"
+	"strconv"
 
 	. "main/controller/dto"
 
@@ -12,6 +17,7 @@ import (
 
 type ChatController struct {
 	CQ *queries.ChatQueries
+	RDB *redis.RedisConnector
 }
 
 func (cc *ChatController) GetHistoryList(context *gin.Context) {
@@ -52,8 +58,48 @@ func (cc *ChatController) GetHistoryList(context *gin.Context) {
 func (cc *ChatController) GetUsersChats(context *gin.Context) {
 
 	claims, err := utils.ExtractClaimsFromCookie(context);
+	
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{
+			"error": "GetUsersChatsException",
+			"message": err.Error(),
+		})
+	}
 
-	users, err := cc.CQ.GetUsersChats(int(claims.UserID));
+	var users []dto.ChatListDTO; 
+	if result, _ := cc.RDB.DoesDataExists(strconv.Itoa(claims.UserID)); *result != 1  {	
+		err := cc.CQ.GetUsersChats(int(claims.UserID), &users);
+		jsonData, err := json.Marshal(users);
+		if err != nil {
+			context.JSON(http.StatusInternalServerError, gin.H{
+				"error": "GetUsersChatsException",
+				"message": err.Error(),
+			})
+		}
+		fmt.Println(users)
+		err = cc.RDB.SetData(strconv.Itoa(claims.UserID), string(jsonData))
+	} else {
+		stringUsers, err := cc.RDB.GetData(strconv.Itoa(claims.UserID))
+
+		if err != nil {
+			context.JSON(http.StatusInternalServerError, gin.H{
+				"error": "GetUsersChatsException",
+				"message": err.Error(),
+			})
+		}
+
+
+		err = json.Unmarshal([]byte(stringUsers), &users)
+		if err != nil {
+			context.JSON(http.StatusInternalServerError, gin.H{
+				"error": "GetUsersChatsException",
+				"message": err.Error(),
+			})
+		}
+
+	}
+
+	fmt.Println(users)
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{
 			"error": "GetUsersChatsException",
@@ -79,7 +125,20 @@ func (cc *ChatController) CreateChatWithMultipleUsers(context *gin.Context) {
 		})
 	}
 
-	err, resultId := cc.CQ.CreateMultipleUserChat(append(idsJson.IDs, int64(claims.UserID)), idsJson.GroupName)
+	fullUserList := append(idsJson.IDs, int64(claims.UserID))
+	err, resultId := cc.CQ.CreateMultipleUserChat(fullUserList, idsJson.GroupName)
+
+	for _, i := range(fullUserList) {	
+		err = cc.RDB.DeleteData(strconv.Itoa(int(i)));
+	}
+
+
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{
+			"error": "CreateChatWithMultipleUsers",
+			"message": err.Error(),
+		})
+	}	
 
 	context.JSON(http.StatusCreated, gin.H{
 		"done": true,

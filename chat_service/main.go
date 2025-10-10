@@ -5,6 +5,7 @@ import (
 	"main/controller"
 	"main/database"
 	"main/database/queries"
+	"main/redis"
 	"main/router"
 	"main/user"
 	"main/websockets"
@@ -39,7 +40,9 @@ func main() {
 	}
 	// println(server)
 
-
+	redisConnection := redis.NewRedisConnector();
+	defer redisConnection.Close();
+	
 	db, _ := database.CreateConnection(config);
 	defer db.DB.Close()
 
@@ -47,10 +50,10 @@ func main() {
 	cq := queries.ChatQueryConstructor(db, server);
 	wsq := queries.WSQueryConstructor(db);
 	
-	connectorActor := websockets.NewConnectorActor(wsq)
+	connectorActor := websockets.NewConnectorActor(wsq, redisConnection)
     defer connectorActor.Stop()
 
-	controllerChat := controller.NewController(db, cq, connectorActor);
+	controllerChat := controller.NewController(db, cq, connectorActor, redisConnection);
 	routerChat := router.NewRouter(app);
 	routerChat.RegisterRouters(controllerChat, config);
 

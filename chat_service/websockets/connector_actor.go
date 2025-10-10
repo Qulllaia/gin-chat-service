@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	. "main/database/models"
 	"main/database/queries"
+	"main/redis"
 	"strconv"
 	"sync"
 
@@ -19,15 +20,17 @@ type ConnectorActor struct {
 	conns_to_user_ids map[*websocket.Conn]int
 	clientsMu sync.RWMutex
 	WSQ *queries.WSQueries
+	RDB *redis.RedisConnector
 }
 
-func NewConnectorActor(wsq *queries.WSQueries) *ConnectorActor {
+func NewConnectorActor(wsq *queries.WSQueries, rdb *redis.RedisConnector) *ConnectorActor {
     actor := &ConnectorActor{
         mailbox:  make(chan mailboxObject, 100),
         stopChan: make(chan struct{}),
         user_id_conns_with_chat_ids:  make(map[int]UserWSData),
         conns_to_user_ids:  make(map[*websocket.Conn]int),
 		WSQ: wsq,
+		RDB: rdb,
     }
     
     actor.wg.Add(1)
@@ -65,6 +68,14 @@ func (a *ConnectorActor) createChatWithMessage(msg MessageWS, conn *websocket.Co
 	current_user_id := a.conns_to_user_ids[conn];
 	to_user_id, _ := strconv.Atoi(msg.User_id);
 
+	err := a.RDB.DeleteData(strconv.Itoa(current_user_id))
+	
+	err = a.RDB.DeleteData(msg.User_id)
+
+	if err != nil {
+		println("Error while deleting redis", err.Error());
+	}
+	
 
 	err, chat_id := a.WSQ.CreateChatWithMessage(current_user_id, to_user_id);
 	if err != nil {
@@ -150,7 +161,6 @@ func (a *ConnectorActor) broadcastMessage(message MessageWS, messageType int, co
 }
 
 func (a *ConnectorActor) broadcastChatCreationNotify(message MessageWS, messageType int, conn *websocket.Conn) {
-
 	current_user_id := a.conns_to_user_ids[conn];
 
 	a.createChatContext(current_user_id, messageType, conn, nil)

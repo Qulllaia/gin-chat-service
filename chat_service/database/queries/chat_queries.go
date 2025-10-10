@@ -46,7 +46,7 @@ func (cq *ChatQueries) GetMessageHistory(current_user_id, chat_id int64) ([]Mess
 	return messages, nil;
 }
 
-func (cq *ChatQueries) GetUsersChats(currentId int) ([]dto.ChatListDTO, error) {
+func (cq *ChatQueries) GetUsersChats(currentId int, users *[]dto.ChatListDTO) (error) {
     rows, err := cq.DB.Query(`
         SELECT chat_id, name, chat_type, users
         FROM "Chat" c
@@ -54,7 +54,7 @@ func (cq *ChatQueries) GetUsersChats(currentId int) ([]dto.ChatListDTO, error) {
     `, currentId)
     if err != nil {
         println(err.Error());
-        return nil, err
+        return err
     }
     defer rows.Close()
     
@@ -63,7 +63,7 @@ func (cq *ChatQueries) GetUsersChats(currentId int) ([]dto.ChatListDTO, error) {
     for rows.Next() {
         var chat dto.ChatListDTO
         if err := rows.Scan(&chat.ID, &chat.Name, &chat.Chat_type, &chat.Users); err != nil {
-            return nil, err
+            return err
         }
         if chat.Chat_type == "PRIVATECHAT" {
             for _, i := range chat.Users {
@@ -82,9 +82,8 @@ func (cq *ChatQueries) GetUsersChats(currentId int) ([]dto.ChatListDTO, error) {
         if err != nil {
             println("Fatal Error to Get User Info with GRPC")
             println(err.Error())
-            return nil, err
-        } else {
-            
+            return err
+        } else {   
             for index, i := range chats {
                 chatId := strconv.Itoa(i.ID);
                 val, exists := userGRPCResponse.ChatIdAndUserNames[chatId];
@@ -97,12 +96,14 @@ func (cq *ChatQueries) GetUsersChats(currentId int) ([]dto.ChatListDTO, error) {
         }
         
     }
+
+    *users = chats
     
     if err = rows.Err(); err != nil {
-        return nil, err
+        return err
     }
     
-    return chats, nil
+    return nil
 }
 
 func(cq *ChatQueries) CreateMultipleUserChat(ids []int64, groupName string) (error, int64) {
