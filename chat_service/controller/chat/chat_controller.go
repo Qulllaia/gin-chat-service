@@ -72,6 +72,13 @@ func (cc *ChatController) GetUsersChats(context *gin.Context) {
 	var users []dto.ChatListDTO; 
 	if result, _ := cc.RDB.DoesDataExists(strconv.Itoa(claims.UserID)); *result != 1  {	
 		err := cc.CQ.GetUsersChats(int(claims.UserID), &users);
+		if err != nil {
+			context.JSON(http.StatusInternalServerError, gin.H{
+				"error": "GetUsersChatsException",
+				"message": err.Error(),
+			})
+		}
+
 		jsonData, err := json.Marshal(users);
 		if err != nil {
 			context.JSON(http.StatusInternalServerError, gin.H{
@@ -79,7 +86,6 @@ func (cc *ChatController) GetUsersChats(context *gin.Context) {
 				"message": err.Error(),
 			})
 		}
-		fmt.Println(users)
 		err = cc.RDB.SetData(strconv.Itoa(claims.UserID), string(jsonData))
 	} else {
 		stringUsers, err := cc.RDB.GetData(strconv.Itoa(claims.UserID))
@@ -90,7 +96,6 @@ func (cc *ChatController) GetUsersChats(context *gin.Context) {
 				"message": err.Error(),
 			})
 		}
-
 
 		err = json.Unmarshal([]byte(stringUsers), &users)
 		if err != nil {
@@ -150,7 +155,11 @@ func (cc *ChatController) CreateChatWithMultipleUsers(context *gin.Context) {
 }
 
 func (cc *ChatController) SetBackGround(context *gin.Context) {
+	claims, err := utils.ExtractClaimsFromCookie(context);
+	
 	file, err := context.FormFile("image");
+	chat_id := context.PostForm("chat_id");
+
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H {
 			"error": err.Error(),
@@ -187,7 +196,34 @@ func (cc *ChatController) SetBackGround(context *gin.Context) {
 	}
 
 	imageURL := fmt.Sprintf("/background/%s", filename)
+
+	intChat_id, err := strconv.Atoi(chat_id);
+
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
 	
+	err = cc.CQ.AddBachgroundToChat(intChat_id, imageURL);
+
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	err = cc.RDB.DeleteData(strconv.Itoa(claims.UserID));
+
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
 	context.JSON(http.StatusOK, gin.H{
 		"message":   "Image uploaded successfully",
 		"filename":  filename,

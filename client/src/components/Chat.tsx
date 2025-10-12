@@ -14,6 +14,8 @@ interface PreviewItem {
   file: File;
 }
 
+
+
 export function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const ws = useRef<WebSocket>(null);
@@ -31,15 +33,13 @@ export function ChatPage() {
   const [previews, setPreviews] = useState<PreviewItem[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Обработчик изменения input
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     if (!e.target.files) return;
     
     const files = Array.from(e.target.files);
     createPreviews(files);
   };
-
-  // Создание превью
+  
   const createPreviews = (files: File[]): void => {
     const newPreviews: PreviewItem[] = [];
     const imageFiles = files.filter(file => file.type.startsWith('image/'));
@@ -63,7 +63,6 @@ export function ChatPage() {
 
         processedCount++;
 
-        // Когда все файлы прочитаны
         if (processedCount === imageFiles.length) {
           setPreviews(newPreviews);
         }
@@ -73,7 +72,6 @@ export function ChatPage() {
     });
   };
 
-  // Проверка существующих файлов при монтировании
   useEffect(() => {
     if (fileInputRef.current && fileInputRef.current.files && fileInputRef.current.files.length > 0) {
       createPreviews(Array.from(fileInputRef.current.files));
@@ -131,6 +129,7 @@ export function ChatPage() {
                   return {
                       id: chat.ID,
                       name: chat.Name,
+                      backgroundUrl: chat.Chat_background
                   } as Chat;
               })
               setChats(friendList);
@@ -208,7 +207,23 @@ export function ChatPage() {
   useEffect(()=>{
     setMessages([]);
     fetchMEssagesHistory();
-    currentChatIdRef.current = currentChatId;
+    let backgroundUrl;
+    chats.forEach(chat => {
+      if(chat.id === currentChatId) {
+        backgroundUrl = chat.backgroundUrl;
+      }
+    }) 
+    
+    const backgroundDiv = document.getElementById('background-div') as HTMLElement;
+    if(backgroundUrl) {  
+      backgroundDiv.style.backgroundImage = `url(http://localhost:5050${backgroundUrl})`;
+      backgroundDiv.style.backgroundSize = 'cover';
+      backgroundDiv.style.backgroundPosition = 'center';
+      backgroundDiv.style.backgroundRepeat = 'no-repeat';
+      currentChatIdRef.current = currentChatId;
+    } else { 
+      backgroundDiv.style.backgroundImage = ``;
+    }
   }, [currentChatId])
 
   const sendMessage = (text: string) => {
@@ -271,7 +286,7 @@ export function ChatPage() {
           }}>Изменить фон чата</button>
         </div>
         <ParentForm isDialog={true} setIsOpen={setIsBackgroundUpdateOpen} isOpen ={isBackgroundUpdateOpen}>
-          <div>
+          <div className='scroll-controller'>
               <h1 className="h3 mb-3 fw-normal">Вставьте картинку</h1> 
               <div className="form-floating"> 
                   <input type="file" className="form-control mb-2" id="floatingImage" placeholder="Password"  
@@ -305,9 +320,11 @@ export function ChatPage() {
                       onClick={() => {
                         const fileInput = document.getElementById('floatingImage') as HTMLInputElement;
                         const file = fileInput.files![0];
-
                         const formData = new FormData();
-                        formData.append('image', file); 
+                        formData.append('image', file);
+                        // console.log(currentChatId) 
+                        // console.log(currentChatIdRef) 
+                        formData.append('chat_id', String(currentChatIdRef.current)); 
 
                         axios.post('http://localhost:5050/api/chat/background', formData,
                         {
@@ -325,7 +342,14 @@ export function ChatPage() {
                           backgroundDiv.style.backgroundSize = 'cover';
                           backgroundDiv.style.backgroundPosition = 'center';
                           backgroundDiv.style.backgroundRepeat = 'no-repeat';
-                          
+                          let temp_chat_list = [] 
+                          chats.forEach(chat => {
+                            if (chat.id === currentChatId) {
+                              chat.backgroundUrl = res.data.url;
+                            }
+                            temp_chat_list.push(chat)
+                          })                           
+
                           setBackgroundUrl(fullImageUrl); 
                         })
                         .catch((e)=> { 

@@ -20,7 +20,9 @@
 .content {
     background: rgb(248,249,250, 1);
     width: 64rem;
-    height: fit-content;
+    /* height: fit-content; */
+    max-height: 90vh; /* 90% от высоты экрана */
+    overflow-y: auto; /* Добавляем скролл при необходимости */ 
     position: absolute;
     z-index: 1000;
     padding: 2rem;

@@ -48,7 +48,7 @@ func (cq *ChatQueries) GetMessageHistory(current_user_id, chat_id int64) ([]Mess
 
 func (cq *ChatQueries) GetUsersChats(currentId int, users *[]dto.ChatListDTO) (error) {
     rows, err := cq.DB.Query(`
-        SELECT chat_id, name, chat_type, users
+        SELECT chat_id, name, chat_type, users, chat_background
         FROM "Chat" c
         WHERE $1 = ANY(users)
     `, currentId)
@@ -62,7 +62,7 @@ func (cq *ChatQueries) GetUsersChats(currentId int, users *[]dto.ChatListDTO) (e
     var chats []dto.ChatListDTO
     for rows.Next() {
         var chat dto.ChatListDTO
-        if err := rows.Scan(&chat.ID, &chat.Name, &chat.Chat_type, &chat.Users); err != nil {
+        if err := rows.Scan(&chat.ID, &chat.Name, &chat.Chat_type, &chat.Users, &chat.Chat_background); err != nil {
             return err
         }
         if chat.Chat_type == "PRIVATECHAT" {
@@ -93,8 +93,7 @@ func (cq *ChatQueries) GetUsersChats(currentId int, users *[]dto.ChatListDTO) (e
                 }
 
             }
-        }
-        
+        } 
     }
 
     *users = chats
@@ -116,4 +115,17 @@ func(cq *ChatQueries) CreateMultipleUserChat(ids []int64, groupName string) (err
 	).Scan(&resultChatId);
     
     return err, resultChatId;
+}
+
+
+func(cq *ChatQueries) AddBachgroundToChat(chat_id int, chat_background string) (error) {
+    _, err := cq.DB.Exec(
+		`UPDATE "Chat" set chat_background = $1 where chat_id = $2`, 
+		chat_background, chat_id,
+	)
+    if err != nil {
+        return err;
+    } 
+    
+    return nil;
 }
