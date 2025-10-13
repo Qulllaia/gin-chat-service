@@ -9,7 +9,8 @@ export interface Message {
 export interface Chat {
     id: number, 
     name: string,
-    backgroundUrl: string,
+    backgroundUrl: string, 
+    chatType: string, 
 }
 
 export interface User {

@@ -14,8 +14,6 @@ interface PreviewItem {
   file: File;
 }
 
-
-
 export function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const ws = useRef<WebSocket>(null);
@@ -28,7 +26,6 @@ export function ChatPage() {
   const [isCreatingNewChat, setIsCreatingNewChat] = useState<boolean>(false);
   const [chats, setChats] = useState<Chat[]>([]) 
   const [isBackgroundUpdateOpen, setIsBackgroundUpdateOpen] = useState<boolean>(false);
-  const [backgroundUrl, setBackgroundUrl] = useState<string>('');
 
   const [previews, setPreviews] = useState<PreviewItem[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -129,7 +126,8 @@ export function ChatPage() {
                   return {
                       id: chat.ID,
                       name: chat.Name,
-                      backgroundUrl: chat.Chat_background
+                      backgroundUrl: chat.Chat_background,
+                      chatType: chat.Chat_type
                   } as Chat;
               })
               setChats(friendList);
@@ -263,7 +261,21 @@ export function ChatPage() {
           }));
           setIsCreatingNewChat(false);
         }
+  }
+
+  const isOnlineStatusVisible = (): boolean => {
+    const data = chats.find((value: Chat, index: number, chats:Chat[])=> {
+      if(value.id === currentChatId) {
+        return value
       }
+    }) 
+    if(data) {
+      if(data.chatType === "PRIVATECHAT") {
+        return true
+      }
+    }
+    return false
+  }
   return (
     <div className='chat-body'>
       <ChatsList 
@@ -279,7 +291,18 @@ export function ChatPage() {
         sendMultipleChatCreationNotify = {sendMultipleChatCreationNotify}
       />
       <div className={currentChatId === 0 && currentUser === 0 ? "chat-container-hide" : "chat-container"}  id = 'background-div'>
-        <div className='chat-header-panel'>
+        <div className='chat-header-panel'> 
+            <div className="d-flex gap-4 align-items-center flex-wrap">
+                <div className="avatar-container">
+                    <img src="https://via.placeholder.com/80" className="avatar"/>
+                    { 
+                      isOnlineStatusVisible() ? 
+                        <div className="status-indicator status-online"></div> 
+                          : 
+                        null
+                    }
+                </div>    
+            </div>
           <h5>{chatHeader}</h5>
           <button className="buttons-group d-grid gap-2" onClick={()=>{
             setIsBackgroundUpdateOpen(true);
@@ -322,9 +345,7 @@ export function ChatPage() {
                         const file = fileInput.files![0];
                         const formData = new FormData();
                         formData.append('image', file);
-                        // console.log(currentChatId) 
-                        // console.log(currentChatIdRef) 
-                        formData.append('chat_id', String(currentChatIdRef.current)); 
+                        formData.append('chat_id', String(currentChatId)); 
 
                         axios.post('http://localhost:5050/api/chat/background', formData,
                         {
@@ -350,7 +371,6 @@ export function ChatPage() {
                             temp_chat_list.push(chat)
                           })                           
 
-                          setBackgroundUrl(fullImageUrl); 
                         })
                         .catch((e)=> { 
                           console.log(e); 

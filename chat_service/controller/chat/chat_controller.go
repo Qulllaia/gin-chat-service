@@ -107,7 +107,7 @@ func (cc *ChatController) GetUsersChats(context *gin.Context) {
 
 	}
 
-	fmt.Println(users)
+	// fmt.Println(users)
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{
 			"error": "GetUsersChatsException",
@@ -170,7 +170,6 @@ func (cc *ChatController) SetBackGround(context *gin.Context) {
 		".jpg":  true,
 		".jpeg": true,
 		".png":  true,
-		".gif":  true,
 	}
 	
 	ext := filepath.Ext(file.Filename)
