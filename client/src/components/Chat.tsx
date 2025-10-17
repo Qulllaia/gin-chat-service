@@ -150,6 +150,10 @@ export function ChatPage() {
     }
   };
 
+  useEffect(()=> { 
+    currentChatIdRef.current = currentChatId;
+  },[currentChatId])
+
   useEffect(() => { 
       if (!ws.current) {
         ws.current = new WebSocket('ws://localhost:5050/api/chat/ws?user_id=fslkfjslkfjslfs&chat_id=1');
@@ -294,7 +298,7 @@ export function ChatPage() {
         <div className='chat-header-panel'> 
             <div className="d-flex gap-4 align-items-center flex-wrap">
                 <div className="avatar-container">
-                    <img src="https://via.placeholder.com/80" className="avatar"/>
+                    <img className="avatar"/>
                     { 
                       isOnlineStatusVisible() ? 
                         <div className="status-indicator status-online"></div> 

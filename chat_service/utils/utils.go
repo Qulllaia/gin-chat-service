@@ -4,9 +4,21 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/joho/godotenv"
+	"github.com/lib/pq"
 )
+
+func Contains(slice pq.Int64Array, item int64) bool {
+    for _, element := range slice {
+        if element == item {
+            return true
+        }
+    }
+    return false
+}
+
 
 type Claims struct {
 	UserID int    `json:"id"`
@@ -39,4 +51,25 @@ func DecodeJWT(jwt_token string) (*Claims, error) {
 	} else {
 		return nil, fmt.Errorf("Ошибка парсинга токена доступа")
 	}
+}
+
+
+func ExtractClaimsFromCookie(context *gin.Context) (*Claims, error) {
+	cookie := context.Request.Cookies()
+
+	jwt_token := ""
+
+	for _, val := range cookie {
+		if val.Name == "session_token" {
+			jwt_token = val.Value
+		}
+	}
+
+	claims, err := DecodeJWT(jwt_token)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return claims, nil
 }

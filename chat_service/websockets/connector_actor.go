@@ -1,37 +1,40 @@
 package websockets
 
 import (
-	"encoding/json"
 	. "main/database/models"
 	"main/database/queries"
 	"main/redis"
-	"strconv"
+	. "main/types"
 	"sync"
 
 	"github.com/gorilla/websocket"
-	"github.com/lib/pq"
 )
 
 type ConnectorActor struct {
-	mailbox  chan mailboxObject
+	mailbox  chan MailboxObject
 	stopChan chan struct{}
 	wg       sync.WaitGroup
-	user_id_conns_with_chat_ids  map[int]UserWSData
+	User_id_conns_with_chat_ids  map[int]UserWSData
 	conns_to_user_ids map[*websocket.Conn]int
 	clientsMu sync.RWMutex
 	WSQ *queries.WSQueries
 	RDB *redis.RedisConnector
+	handlerManager *HandlerManager
 }
 
 func NewConnectorActor(wsq *queries.WSQueries, rdb *redis.RedisConnector) *ConnectorActor {
     actor := &ConnectorActor{
-        mailbox:  make(chan mailboxObject, 100),
+        mailbox:  make(chan MailboxObject, 100),
         stopChan: make(chan struct{}),
-        user_id_conns_with_chat_ids:  make(map[int]UserWSData),
+        User_id_conns_with_chat_ids:  make(map[int]UserWSData),
         conns_to_user_ids:  make(map[*websocket.Conn]int),
 		WSQ: wsq,
 		RDB: rdb,
     }
+
+	handlerManager := NewHandlerManager(actor)
+
+	actor.handlerManager = handlerManager;
     
     actor.wg.Add(1)
     go actor.processMessages()
@@ -45,65 +48,53 @@ func (a *ConnectorActor) processMessages() {
     for {
         select {
 			case msg := <-a.mailbox:
-				a.handleMessage(msg.message, msg.MessageType, msg.conn)
+				a.handleMessage(msg.Message, msg.MessageType, msg.Conn)
 			case <-a.stopChan:
 				return
         }
     }
 }
 
+func (a *ConnectorActor) GetUserConnections() map[int]UserWSData {
+	result := make(map[int]UserWSData)
+	for k, v := range a.User_id_conns_with_chat_ids {
+		result[k] = UserWSData{
+			WS:      v.WS,
+			Chat_ids: v.Chat_ids,
+		}
+	}
+	return result
+}
+
+func (a *ConnectorActor) GetConnectoinsToUsers() map[*websocket.Conn]int {
+	result := make(map[*websocket.Conn]int)
+	for k, v := range a.conns_to_user_ids {
+		result[k] = v
+	}
+	return result
+}
+
+func (a *ConnectorActor) GetWSQ() *queries.WSQueries {
+	return a.WSQ
+}
+
+func (a *ConnectorActor) GetRDB() *redis.RedisConnector {
+	return a.RDB
+}
+
 func (a *ConnectorActor) handleMessage(msg MessageWS, messageType int, conn *websocket.Conn) {
 	switch(msg.Type) {
 		case "MESSAGE": 
-			a.broadcastMessage(msg, messageType, conn);
-		case "NEW_CHAT": 
-			a.createChatWithMessage(msg, conn, messageType);
-			a.broadcastMessage(msg, messageType, conn);
+			a.handlerManager.handlers["MESSAGE"].Handle(msg, messageType, conn, a)
+		case "NEW_CHAT": 	
+			a.handlerManager.handlers["NEW_CHAT"].Handle(msg, messageType, conn, a)
 		case "NEW_MULTIPLE_CHAT":
-			a.broadcastChatCreationNotify(msg, messageType, conn);
+			a.handlerManager.handlers["NEW_MULTIPLE_CHAT"].Handle(msg, messageType, conn, a)	
 		}
 }
 
-func (a *ConnectorActor) createChatWithMessage(msg MessageWS, conn *websocket.Conn, messageType int) {
-	current_user_id := a.conns_to_user_ids[conn];
-	to_user_id, _ := strconv.Atoi(msg.User_id);
-
-	err := a.RDB.DeleteData(strconv.Itoa(current_user_id))
-	
-	err = a.RDB.DeleteData(msg.User_id)
-
-	if err != nil {
-		println("Error while deleting redis", err.Error());
-	}
-	
-
-	err, chat_id := a.WSQ.CreateChatWithMessage(current_user_id, to_user_id);
-	if err != nil {
-		println("Error while creating a chat", err.Error());
-	}
- 
-	if err != nil {
-		println("Ошибка формирования ответа при создании нового чата", err.Error())
-	}
-
-	a.WSQ.InsertMessageIntoChatHistory(chat_id, current_user_id, msg.Message);
-
-	a.createChatContext(current_user_id, messageType, conn, &map[string]interface{} {
-		"type": "NEW_CHAT",
-		"chat_id": chat_id,
-	},)
-
-	if toUserData, exists := a.user_id_conns_with_chat_ids[to_user_id]; exists  {
-		
-		a.createChatContext(to_user_id, messageType, toUserData.ws, &map[string]interface{} {
-			"type": "NEW_CHAT",
-			"chat_id": chat_id,
-		},)
-	}
-}
-
 func (a *ConnectorActor) Send(msg MessageWS, messageType int, conn *websocket.Conn) {
-    a.mailbox <- mailboxObject{message: msg, MessageType: messageType, conn: conn }
+    a.mailbox <- MailboxObject{Message: msg, MessageType: messageType, Conn: conn }
 }
 
 func (a *ConnectorActor) Stop() {
@@ -121,9 +112,9 @@ func (a *ConnectorActor) AddClient(conn *websocket.Conn, user_id int) {
 		println("GetUserChatListError", err.Error())
 	}
 	
-    a.user_id_conns_with_chat_ids[user_id] = UserWSData{
-		chat_ids: user.Chat_list,
-		ws: conn,
+    a.User_id_conns_with_chat_ids[user_id] = UserWSData{
+		Chat_ids: user.Chat_list,
+		WS: conn,
 	}
 
 	a.conns_to_user_ids[conn] = user_id;
@@ -132,70 +123,5 @@ func (a *ConnectorActor) AddClient(conn *websocket.Conn, user_id int) {
 func (a *ConnectorActor) RemoveClient(user_id int) {
     a.clientsMu.Lock()
     defer a.clientsMu.Unlock()
-    delete(a.user_id_conns_with_chat_ids, user_id)
-}
-
-func (a *ConnectorActor) broadcastMessage(message MessageWS, messageType int, conn *websocket.Conn) {
-	var getter_conn *websocket.Conn;
-	for user_id, value := range a.user_id_conns_with_chat_ids {
-		chat_id, _ := strconv.Atoi(message.Chat_id); 
-
-		if contains(value.chat_ids, int64(chat_id)) {
-			getter_conn = value.ws;
-			if getter_conn != conn {
-				responseData, err := json.Marshal(map[string]interface{} {
-					"message": message.Message,
-					"chat_id": chat_id,
-					"type": "MESSAGE",
-				})
-				if err = getter_conn.WriteMessage(messageType, []byte(responseData)); err != nil {
-					println(err.Error());	
-				}
-			} else {
-				if err := a.WSQ.InsertMessageIntoChatHistory(chat_id, user_id, string(message.Message)); err != nil {
-					println(err.Error());	
-				}
-			}
-		}
-	}
-}
-
-func (a *ConnectorActor) broadcastChatCreationNotify(message MessageWS, messageType int, conn *websocket.Conn) {
-	current_user_id := a.conns_to_user_ids[conn];
-
-	a.createChatContext(current_user_id, messageType, conn, nil)
-	
-	for _, value := range message.User_ids {
-		if val, exists := a.user_id_conns_with_chat_ids[value]; exists {
-			a.createChatContext(value, messageType, val.ws, &map[string]interface{}{
-				"type": "NEW_MULTIPLE_CHAT",
-			})
-		}
-	}
-}
-
-func (a *ConnectorActor) createChatContext(user_id int, messageType int, conn *websocket.Conn, response_data *map[string]interface{}) {
-
-	a.AddClient(conn, user_id)
-
-	if response_data != nil {
-		responseData, err := json.Marshal(response_data)
-
-		if err != nil {
-			println(err.Error())
-		}
-
-		if err = conn.WriteMessage(messageType, responseData); err != nil {
-			println(err.Error());	
-		}
-	}
-}
-
-func contains(slice pq.Int64Array, item int64) bool {
-    for _, element := range slice {
-        if element == item {
-            return true
-        }
-    }
-    return false
+    delete(a.User_id_conns_with_chat_ids, user_id)
 }

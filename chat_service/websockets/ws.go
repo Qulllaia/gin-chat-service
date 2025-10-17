@@ -2,7 +2,8 @@ package websockets
 
 import (
 	"encoding/json"
-	"main/controller/utils"
+	. "main/types"
+	"main/utils"
 	"net/http"
 
 	"github.com/gin-gonic/gin"

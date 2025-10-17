@@ -182,7 +182,7 @@ export function ChatsList({
                         {chats.map((Chat:Chat) => (
                             <ChatCard 
                                 key={Chat.id} 
-                                friend={Chat} 
+                                chat={Chat} 
                                 setCurrentChatId={setCurrentChatId} 
                                 currentChatId={currentChatId} 
                                 setChatHeader={setChatHeader}

@@ -4,16 +4,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"main/controller/dto"
-	"main/controller/utils"
+	. "main/controller/dto"
 	"main/database/queries"
 	"main/redis"
+	"main/utils"
 	"net/http"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
-
-	. "main/controller/dto"
 
 	"github.com/gin-gonic/gin"
 )
