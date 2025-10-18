@@ -1,14 +1,15 @@
 package handlers
 
 import (
-	"encoding/json"
 	"main/types"
 	. "main/types"
+	"main/websockets/handlers/base"
 
 	"github.com/gorilla/websocket"
 )
 
 type NewMultiChatHandler struct {
+	*base.BaseHandler	
 }
 
 func NewNewMultiChatHandler() types.Handler {
@@ -23,7 +24,7 @@ func (nmch *NewMultiChatHandler) broadcastChatCreationNotify(message MessageWS, 
 	connsToUserId := a.GetConnectoinsToUsers()
 	current_user_id := connsToUserId[conn];
 	userIdToConns := a.GetUserConnections()
-	nmch.createChatContext(current_user_id, messageType, conn, 
+	nmch.CreateChatContext(current_user_id, messageType, conn, 
 		&map[string]interface{}{
 			"type": "NEW_MULTIPLE_CHAT",
 		}, a,
@@ -31,28 +32,11 @@ func (nmch *NewMultiChatHandler) broadcastChatCreationNotify(message MessageWS, 
 	
 	for _, value := range message.User_ids {
 		if val, exists := userIdToConns[value]; exists {
-			nmch.createChatContext(value, messageType, val.WS, 
+			nmch.CreateChatContext(value, messageType, val.WS, 
 				&map[string]interface{}{
 					"type": "NEW_MULTIPLE_CHAT",
 				}, a,
 			)
-		}
-	}
-}
-
-func (nmch *NewMultiChatHandler) createChatContext(user_id int, messageType int, conn *websocket.Conn, response_data *map[string]interface{}, a Actor) {
-
-	a.AddClient(conn, user_id)
-
-	if response_data != nil {
-		responseData, err := json.Marshal(response_data)
-
-		if err != nil {
-			println(err.Error())
-		}
-
-		if err = conn.WriteMessage(messageType, responseData); err != nil {
-			println(err.Error());	
 		}
 	}
 }
