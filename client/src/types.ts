@@ -10,7 +10,8 @@ export interface Chat {
     id: number, 
     name: string,
     backgroundUrl: string, 
-    chatType: string, 
+    chatType: string,
+    userId: number | undefined 
 }
 
 export interface User {

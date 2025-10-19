@@ -2,6 +2,7 @@ package websockets
 
 import (
 	"encoding/json"
+	"fmt"
 	. "main/types"
 	"main/utils"
 	"net/http"
@@ -41,14 +42,27 @@ func (ws *WSConnection) WebsocketsInit(context *gin.Context) {
 		println("Error JWT", err.Error())
 		return;
 	}
+
+	
 	ws.Actor.AddClient(conn, claims.UserID)
 
+	ws.Actor.Send(MessageWS{
+		Type: "USER_STATUS",
+		Message: "online",
+	}, websocket.TextMessage, conn);
+	
 	for {
 
 		messageType, message_ws, err := conn.ReadMessage();
 
 		if err != nil {
-			println("Error Message", err.Error());
+            if websocket.IsCloseError(err, websocket.CloseGoingAway) {
+				ws.Actor.Send(MessageWS{
+					Type: "USER_STATUS",
+					Message: "offline",
+				}, messageType, conn);
+            }
+            fmt.Printf("WebSocket error: %v\n", err)
 			break;
 		}
 

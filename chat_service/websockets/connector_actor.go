@@ -90,6 +90,8 @@ func (a *ConnectorActor) handleMessage(msg MessageWS, messageType int, conn *web
 			a.handlerManager.handlers["NEW_CHAT"].Handle(msg, messageType, conn, a)
 		case "NEW_MULTIPLE_CHAT":
 			a.handlerManager.handlers["NEW_MULTIPLE_CHAT"].Handle(msg, messageType, conn, a)	
+		case "USER_STATUS":
+			a.handlerManager.handlers["USER_STATUS"].Handle(msg, messageType, conn, a)	
 		}
 }
 

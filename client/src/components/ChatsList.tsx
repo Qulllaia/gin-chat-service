@@ -16,7 +16,8 @@ export function ChatsList({
         fetchChats, 
         chats, 
         setChats,
-        sendMultipleChatCreationNotify
+        sendMultipleChatCreationNotify,
+        usersOnline 
     }:any) {
    
     const [users, setUsers] = useState<User[]>([])
@@ -186,6 +187,7 @@ export function ChatsList({
                                 setCurrentChatId={setCurrentChatId} 
                                 currentChatId={currentChatId} 
                                 setChatHeader={setChatHeader}
+                                usersOnline={usersOnline}
                             />
                         ))}
                     </div>

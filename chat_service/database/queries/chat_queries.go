@@ -68,7 +68,8 @@ func (cq *ChatQueries) GetUsersChats(currentId int, users *[]dto.ChatListDTO) (e
         if chat.Chat_type == "PRIVATECHAT" {
             for _, i := range chat.Users {
                 if i != int64(currentId) {
-                    resultIds[strconv.Itoa(chat.ID)] = strconv.Itoa(int(i))    
+                    resultIds[strconv.Itoa(chat.ID)] = strconv.Itoa(int(i))
+                    chat.User_id = &i; 
                 } 
             }
             
@@ -89,7 +90,10 @@ func (cq *ChatQueries) GetUsersChats(currentId int, users *[]dto.ChatListDTO) (e
                 val, exists := userGRPCResponse.ChatIdAndUserNames[chatId];
                 
                 if exists {
-                    chats[index].Name = &val; 
+                    user_id, _ := strconv.Atoi(resultIds[chatId])
+                    user_id64 := int64(user_id) 
+                    chats[index].Name = &val;
+                    chats[index].User_id = &user_id64 
                 }
 
             }

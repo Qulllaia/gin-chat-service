@@ -29,6 +29,7 @@ export function ChatPage() {
 
   const [previews, setPreviews] = useState<PreviewItem[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [usersOnline, setUsersOnline] = useState<number[]>([])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     if (!e.target.files) return;
@@ -127,7 +128,8 @@ export function ChatPage() {
                       id: chat.ID,
                       name: chat.Name,
                       backgroundUrl: chat.Chat_background,
-                      chatType: chat.Chat_type
+                      chatType: chat.Chat_type,
+                      userId: chat.User_id
                   } as Chat;
               })
               setChats(friendList);
@@ -182,6 +184,19 @@ export function ChatPage() {
         }
         else if (data.type === "NEW_MULTIPLE_CHAT") {
           fetchChats()
+        }
+        // TODO: Привести входные данные к общему формату
+        else if (data.online) {
+          setUsersOnline(prev => [data.online, ...prev])
+        }
+        else if (data.offline) {
+          let newUsersOnline = Array<number>()
+          usersOnline.forEach(userId => {
+            if(data.offline !== userId) {
+              newUsersOnline.push(userId)
+            } 
+          })
+          setUsersOnline(newUsersOnline)
         }
       };
 
@@ -293,6 +308,7 @@ export function ChatPage() {
         chats={chats}
         setChats={setChats}
         sendMultipleChatCreationNotify = {sendMultipleChatCreationNotify}
+        usersOnline={usersOnline}
       />
       <div className={currentChatId === 0 && currentUser === 0 ? "chat-container-hide" : "chat-container"}  id = 'background-div'>
         <div className='chat-header-panel'> 

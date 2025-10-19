@@ -8,6 +8,7 @@ type ChatListDTO struct {
 	Users     pq.Int64Array `db:"users"`
 	Chat_type string  `db:chat_type`
 	Chat_background *string  `db:chat_background`
+	User_id *int64
 }
 
 type ChatIDURI struct {
