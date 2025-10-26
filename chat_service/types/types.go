@@ -4,6 +4,7 @@ import (
 	"main/database/queries"
 	"main/redis"
 
+	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"github.com/lib/pq"
 )
@@ -39,4 +40,12 @@ type Actor interface {
 
 type Handler interface {
 	Handle(message MessageWS, messageType int, conn *websocket.Conn, actor Actor)
+}
+
+type Endpoint[T any] func(context *gin.Context) (T, error)
+
+type HttpResponse struct {
+	Done   bool        `json:"done"`
+	Result interface{} `json:"result,omitempty"`
+	Error  string      `json:"error,omitempty"`
 }

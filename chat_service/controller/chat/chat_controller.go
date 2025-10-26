@@ -57,67 +57,44 @@ func (cc *ChatController) GetHistoryList(context *gin.Context) {
 }
 
 
-func (cc *ChatController) GetUsersChats(context *gin.Context) {
+func (cc *ChatController) GetUsersChats(context *gin.Context) ([]dto.ChatListDTO, error){
 
 	claims, err := utils.ExtractClaimsFromCookie(context);
 	
 	if err != nil {
-		context.JSON(http.StatusInternalServerError, gin.H{
-			"error": "GetUsersChatsException",
-			"message": err.Error(),
-		})
+		return nil, err;
 	}
-
+	stringUserId := strconv.Itoa(claims.UserID);
 	var users []dto.ChatListDTO; 
-	if result, _ := cc.RDB.DoesDataExists(strconv.Itoa(claims.UserID)); *result != 1  {	
-		err := cc.CQ.GetUsersChats(int(claims.UserID), &users);
-		if err != nil {
-			context.JSON(http.StatusInternalServerError, gin.H{
-				"error": "GetUsersChatsException",
-				"message": err.Error(),
-			})
+	if result, _ := cc.RDB.DoesDataExists(stringUserId); *result != 1  {	
+		
+		if err := cc.CQ.GetUsersChats(int(claims.UserID), &users); err != nil {
+			return nil, err
 		}
 
 		jsonData, err := json.Marshal(users);
 		if err != nil {
-			context.JSON(http.StatusInternalServerError, gin.H{
-				"error": "GetUsersChatsException",
-				"message": err.Error(),
-			})
+			return nil, err;
 		}
-		err = cc.RDB.SetData(strconv.Itoa(claims.UserID), string(jsonData))
+		
+		if err := cc.RDB.SetData(stringUserId, string(jsonData)); err != nil {
+			return nil, err;
+		}	
+		
 	} else {
-		stringUsers, err := cc.RDB.GetData(strconv.Itoa(claims.UserID))
+		stringUsers, err := cc.RDB.GetData(stringUserId)
 
 		if err != nil {
-			context.JSON(http.StatusInternalServerError, gin.H{
-				"error": "GetUsersChatsException",
-				"message": err.Error(),
-			})
+			return nil, err;
 		}
-
-		err = json.Unmarshal([]byte(stringUsers), &users)
-		if err != nil {
-			context.JSON(http.StatusInternalServerError, gin.H{
-				"error": "GetUsersChatsException",
-				"message": err.Error(),
-			})
+	
+		if err = json.Unmarshal([]byte(stringUsers), &users); err != nil {
+			return nil, err
 		}
 
 	}
 
-	// fmt.Println(users)
-	if err != nil {
-		context.JSON(http.StatusInternalServerError, gin.H{
-			"error": "GetUsersChatsException",
-			"message": err.Error(),
-		})
-	} else {
-		context.JSON(http.StatusOK, gin.H{
-			"done": true,
-			"result": users,
-		})
-	}
+	return users, nil
 }
 
 func (cc *ChatController) CreateChatWithMultipleUsers(context *gin.Context) {

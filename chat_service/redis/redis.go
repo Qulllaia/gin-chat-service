@@ -2,7 +2,6 @@ package redis
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -15,11 +14,11 @@ func NewRedisConnector() *RedisConnector {
 	redisDataBase := redis.NewClient(&redis.Options{
 		Addr: "localhost:6379",
 	})
-	fmt.Println(redisDataBase)	
+	
 	return &RedisConnector{ redisDataBase } 
 }
 
-func (rdb *RedisConnector) SetData(key, value string) (error) {
+func (rdb *RedisConnector) SetData(key string, value any) (error) {
 	
 	ctx := context.Background();
 	err := rdb.Set(ctx, key, value, 0).Err();
@@ -57,8 +56,6 @@ func (rdb *RedisConnector) DeleteData(key string) (error) {
 
 
 func (rdb *RedisConnector) DoesDataExists(key string) (*int64, error) {
-	println(key)
-	println("key")
 	ctx := context.Background();
 	val, err := rdb.Exists(ctx, key).Result()
 	if err != nil {
