@@ -2,7 +2,10 @@ package chat_router
 
 import (
 	"main/controller"
+	"main/controller/dto"
+	"main/database/models"
 	"main/middleware"
+	"main/types"
 
 	"github.com/gin-gonic/gin"
 )
@@ -18,10 +21,10 @@ func NewChat(router *gin.RouterGroup) *Chat {
 func (a *Chat) ChatRoutes(controller *controller.Controller) {
 	api := a.ChatRouter.Group("chat", middleware.AuthMiddleware)
 	{
-		api.GET("/history/:id", controller.Chat.GetHistoryList)
+		api.GET("/history/:id", middleware.ErrorMiddleware[[]models.Message](controller.Chat.GetHistoryList))
 		api.GET("/ws", controller.WS.WebsocketsInit)
-		api.GET("/chats", middleware.ErrorMiddleware(controller.Chat.GetUsersChats))
-		api.POST("chats", controller.Chat.CreateChatWithMultipleUsers)
-		api.POST("background", controller.Chat.SetBackGround)
+		api.GET("/chats", middleware.ErrorMiddleware[[]dto.ChatListDTO](controller.Chat.GetUsersChats))
+		api.POST("/chats", middleware.ErrorMiddleware[*int64](controller.Chat.CreateChatWithMultipleUsers))
+		api.POST("/background", middleware.ErrorMiddleware[*types.ImageResponse](controller.Chat.SetBackGround))
 	}
 }

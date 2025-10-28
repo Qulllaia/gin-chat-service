@@ -42,10 +42,18 @@ type Handler interface {
 	Handle(message MessageWS, messageType int, conn *websocket.Conn, actor Actor)
 }
 
-type Endpoint[T any] func(context *gin.Context) (T, error)
+type Endpoint[T any] func(context *gin.Context) (ErrorType, T, error)
 
 type HttpResponse struct {
 	Done   bool        `json:"done"`
 	Result interface{} `json:"result,omitempty"`
+	ErrorType ErrorType `json:"error_type,omitempty"`
 	Error  string      `json:"error,omitempty"`
+}
+
+type ImageResponse struct {
+	Message string `json:"message"`
+	Filename string `json:"filename"`
+	Url string `json:"url"`
+	Full_url string `json:"full_url"`
 }

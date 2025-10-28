@@ -376,7 +376,7 @@ export function ChatPage() {
                         })
                         .then((res)=> {
                           setIsBackgroundUpdateOpen(false)
-                          const fullImageUrl = res.data.full_url;
+                          const fullImageUrl = res.data.result.full_url;
                           
                           const backgroundDiv = document.getElementById('background-div') as HTMLElement;
                           backgroundDiv.style.backgroundImage = `url(http://${fullImageUrl})`;
@@ -386,7 +386,7 @@ export function ChatPage() {
                           let temp_chat_list = [] 
                           chats.forEach(chat => {
                             if (chat.id === currentChatId) {
-                              chat.backgroundUrl = res.data.url;
+                              chat.backgroundUrl = res.data.result.url;
                             }
                             temp_chat_list.push(chat)
                           })                           

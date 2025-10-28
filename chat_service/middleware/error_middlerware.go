@@ -9,9 +9,10 @@ import (
 
 func ErrorMiddleware[T any](endpoint Endpoint[T]) gin.HandlerFunc {
 	return func(context *gin.Context) {	
-		if result, err := endpoint(context); err != nil {
+		if errType, result, err := endpoint(context); errType != NoError {
 			context.JSON(http.StatusInternalServerError, HttpResponse{
-				Done: false,	
+				Done: false,
+				ErrorType: errType,	
 				Error: err.Error(),
 			})
 			context.Abort()
