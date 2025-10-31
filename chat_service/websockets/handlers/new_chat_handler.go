@@ -52,14 +52,14 @@ func (nch *NewChatHandler) createChatWithMessage(msg MessageWS, conn *websocket.
 	actorWSQ.InsertMessageIntoChatHistory(chat_id, current_user_id, msg.Message);
 
 	nch.CreateChatContext(current_user_id, messageType, conn, &map[string]interface{} {
-		"type": "NEW_CHAT",
+		"type": NEW_CHAT,
 		"chat_id": chat_id,
 	},a)
 
 	if toUserData, exists := userConns[to_user_id]; exists  {
 		
 		nch.CreateChatContext(to_user_id, messageType, toUserData.WS, &map[string]interface{} {
-			"type": "NEW_CHAT",
+			"type": NEW_CHAT,
 			"chat_id": chat_id,
 
 		},a)

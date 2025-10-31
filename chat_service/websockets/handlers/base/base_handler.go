@@ -3,6 +3,7 @@ package base
 import (
 	"encoding/json"
 	"main/types"
+	. "main/types"
 	"main/utils"
 	"strconv"
 
@@ -25,7 +26,7 @@ func (bh *BaseHandler) BroadcastMessage(message types.MessageWS, messageType int
 				responseData, err := json.Marshal(map[string]interface{}{
 					"message": message.Message,
 					"chat_id": chat_id,
-					"type":    "MESSAGE",
+					"type":    MESSAGE,
 				})
 				if err = getter_conn.WriteMessage(messageType, []byte(responseData)); err != nil {
 					println(err.Error())

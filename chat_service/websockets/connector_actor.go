@@ -83,16 +83,7 @@ func (a *ConnectorActor) GetRDB() *redis.RedisConnector {
 }
 
 func (a *ConnectorActor) handleMessage(msg MessageWS, messageType int, conn *websocket.Conn) {
-	switch(msg.Type) {
-		case "MESSAGE": 
-			a.handlerManager.handlers["MESSAGE"].Handle(msg, messageType, conn, a)
-		case "NEW_CHAT": 	
-			a.handlerManager.handlers["NEW_CHAT"].Handle(msg, messageType, conn, a)
-		case "NEW_MULTIPLE_CHAT":
-			a.handlerManager.handlers["NEW_MULTIPLE_CHAT"].Handle(msg, messageType, conn, a)	
-		case "USER_STATUS":
-			a.handlerManager.handlers["USER_STATUS"].Handle(msg, messageType, conn, a)	
-		}
+	a.handlerManager.handlers[msg.Type].Handle(msg, messageType, conn, a)
 }
 
 func (a *ConnectorActor) Send(msg MessageWS, messageType int, conn *websocket.Conn) {

@@ -190,13 +190,9 @@ export function ChatPage() {
           setUsersOnline(prev => [data.online, ...prev])
         }
         else if (data.offline) {
-          let newUsersOnline = Array<number>()
-          usersOnline.forEach(userId => {
-            if(data.offline !== userId) {
-              newUsersOnline.push(userId)
-            } 
-          })
-          setUsersOnline(newUsersOnline)
+          setUsersOnline(prev => prev.filter((userId)=> userId !== data.offline))
+        } else if(data.activeUsersIds) {
+          setUsersOnline(data.activeUsersIds)
         }
       };
 

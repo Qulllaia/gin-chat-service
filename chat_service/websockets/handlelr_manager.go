@@ -6,7 +6,7 @@ import (
 )
 
 type HandlerManager struct {
-	handlers map[string]Handler
+	handlers map[MessageType]Handler
 }
 
 func NewHandlerManager(actor *ConnectorActor) *HandlerManager {
@@ -15,11 +15,11 @@ func NewHandlerManager(actor *ConnectorActor) *HandlerManager {
 	newMultiChatHandler := handlers.NewNewMultiChatHandler()	
 	newOnlineStatusHandler := handlers.NewOnlineStatusHandler()	
 
-	handlersMap := make(map[string]Handler)
+	handlersMap := make(map[MessageType]Handler)
 
-	handlersMap["NEW_CHAT"] = newChatHandler
-	handlersMap["MESSAGE"] = messageHandler
-	handlersMap["NEW_MULTIPLE_CHAT"] = newMultiChatHandler
-	handlersMap["USER_STATUS"] = newOnlineStatusHandler
+	handlersMap[NEW_CHAT] = newChatHandler
+	handlersMap[MESSAGE] = messageHandler
+	handlersMap[NEW_MULTIPLE_CHAT] = newMultiChatHandler
+	handlersMap[USER_STATUS] = newOnlineStatusHandler
 	return &HandlerManager{ handlers: handlersMap}
 }

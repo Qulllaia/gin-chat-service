@@ -16,7 +16,7 @@ type MessageWS struct {
 	User_id  string `json:"user_id"`
 	User_ids []int  `json:"user_ids"`
 	Message  string `json:"messages"`
-	Type     string `json:"type"`
+	Type     MessageType `json:"type"`
 }
 
 type UserWSData struct {
@@ -57,3 +57,10 @@ type ImageResponse struct {
 	Url string `json:"url"`
 	Full_url string `json:"full_url"`
 }
+
+const (
+	MESSAGE MessageType = "MESSAGE"
+	NEW_CHAT  = "NEW_CHAT"
+	NEW_MULTIPLE_CHAT = "NEW_MULTIPLE_CHAT"
+	USER_STATUS = "USER_STATUS"
+)

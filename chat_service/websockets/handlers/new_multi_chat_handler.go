@@ -26,7 +26,7 @@ func (nmch *NewMultiChatHandler) broadcastChatCreationNotify(message MessageWS, 
 	userIdToConns := a.GetUserConnections()
 	nmch.CreateChatContext(current_user_id, messageType, conn, 
 		&map[string]interface{}{
-			"type": "NEW_MULTIPLE_CHAT",
+			"type": NEW_MULTIPLE_CHAT,
 		}, a,
 	)
 	
@@ -34,7 +34,7 @@ func (nmch *NewMultiChatHandler) broadcastChatCreationNotify(message MessageWS, 
 		if val, exists := userIdToConns[value]; exists {
 			nmch.CreateChatContext(value, messageType, val.WS, 
 				&map[string]interface{}{
-					"type": "NEW_MULTIPLE_CHAT",
+					"type": NEW_MULTIPLE_CHAT,
 				}, a,
 			)
 		}
