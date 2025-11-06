@@ -48,7 +48,7 @@ func (cq *ChatQueries) GetMessageHistory(current_user_id, chat_id int64) ([]Mess
 
 func (cq *ChatQueries) GetUsersChats(currentId int, users *[]dto.ChatListDTO) (error) {
     rows, err := cq.DB.Query(`
-        SELECT chat_id, name, chat_type, users, chat_background
+        SELECT chat_id, name, chat_type_id, users, chat_background
         FROM "Chat" c
         WHERE $1 = ANY(users)
     `, currentId)
@@ -62,10 +62,10 @@ func (cq *ChatQueries) GetUsersChats(currentId int, users *[]dto.ChatListDTO) (e
     var chats []dto.ChatListDTO
     for rows.Next() {
         var chat dto.ChatListDTO
-        if err := rows.Scan(&chat.ID, &chat.Name, &chat.Chat_type, &chat.Users, &chat.Chat_background); err != nil {
+        if err := rows.Scan(&chat.ID, &chat.Name, &chat.Chat_type_id, &chat.Users, &chat.Chat_background); err != nil {
             return err
         }
-        if chat.Chat_type == "PRIVATECHAT" {
+        if chat.Chat_type_id == "PRIVATECHAT" {
             for _, i := range chat.Users {
                 if i != int64(currentId) {
                     resultIds[strconv.Itoa(chat.ID)] = strconv.Itoa(int(i))
@@ -113,7 +113,7 @@ func(cq *ChatQueries) CreateMultipleUserChat(ids []int64, groupName string) (err
     var resultChatId int64;
     userIDsArray := pq.Array(ids);
     err := cq.DB.QueryRow(
-		`INSERT INTO "Chat" (users, name, chat_type) 
+		`INSERT INTO "Chat" (users, name, chat_type_id) 
 		VALUES($1, $2, $3) RETURNING chat_id`, 
 		userIDsArray, groupName, "GROUPCHAT",
 	).Scan(&resultChatId);

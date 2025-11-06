@@ -6,7 +6,7 @@ type ChatListDTO struct {
 	Name      *string `db:"name"`
 	ID        int     `db:"id"`
 	Users     pq.Int64Array `db:"users"`
-	Chat_type string  `db:chat_type`
+	Chat_type_id string  `db:chat_type_id`
 	Chat_background *string  `db:chat_background`
 	User_id *int64 
 }

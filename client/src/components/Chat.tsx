@@ -128,7 +128,7 @@ export function ChatPage() {
                       id: chat.ID,
                       name: chat.Name,
                       backgroundUrl: chat.Chat_background,
-                      chatType: chat.Chat_type,
+                      chatType: chat.Chat_type_id,
                       userId: chat.User_id
                   } as Chat;
               })

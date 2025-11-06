@@ -18,7 +18,7 @@ func CreateConnection(config *config.Config) (*Database, error) {
 
 	db, err := sqlx.Connect("postgres", connectionString);
 	if err != nil{
-		println("Failed Connection", err)
+		println("Failed Connection", err.Error())
 	}
 	return &Database{DB: db}, nil;
 }

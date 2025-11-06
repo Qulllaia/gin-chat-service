@@ -13,6 +13,8 @@ export function ChatCard({chat, setCurrentChatId, currentChatId, setChatHeader, 
         "list-group-item list-group-item-action py-3 lh-sm blue" : 
         "list-group-item list-group-item-action py-3 lh-sm"} 
         key={chat.id} onClick={()=>{
+                console.log(usersOnline)
+                console.log(chat.userId)
                 setCurrentChatId(chat.id)
                 setChatHeader(chat.name)
             }}>

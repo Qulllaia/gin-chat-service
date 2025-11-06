@@ -28,6 +28,7 @@ func main() {
 	config, err := config.CreateConfig();
 
 	if err != nil {
+		println(err.Error())
 		panic("CONFIG ERROR")
 	}
     

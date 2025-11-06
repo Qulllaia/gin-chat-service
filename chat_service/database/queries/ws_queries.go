@@ -57,7 +57,7 @@ func (wsq *WSQueries) CreateChatWithMessage(user_ids ...int) (error, int) {
 	var chat_id int;
 	userIDsArray := pq.Array(user_ids)
 	err := wsq.DB.QueryRow(
-		`INSERT INTO "Chat" (users, name, chat_type) 
+		`INSERT INTO "Chat" (users, name, chat_type_id) 
 		VALUES($1, $2, $3) RETURNING chat_id`, 
 		userIDsArray, nil, "PRIVATECHAT",
 	).Scan(&chat_id);
