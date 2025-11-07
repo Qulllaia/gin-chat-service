@@ -16,121 +16,121 @@ func UserQueryConstructor(db *database.Database) *UserQuery {
 	return &UserQuery{db}
 }
 
-func (uq *UserQuery) InsertUser(name string, password string) (int64, error) {
-    var id int64;
-	err := uq.DB.QueryRow(`INSERT INTO "user" (name, password) VALUES ($1, $2) RETURNING id`, name, password).Scan(&id);
-	return id, err; 
+func (uq *UserQuery) InsertUser(email, name, password string) (int64, error) {
+	var id int64
+	err := uq.DB.QueryRow(`INSERT INTO "user" (email, name, password) VALUES ($1, $2, $3) RETURNING id`, email, name, password).Scan(&id)
+	return id, err
 }
 
 func (uq *UserQuery) GetUserByID(id int) (*User, error) {
-    var user User
-    err := uq.DB.QueryRow(`
+	var user User
+	err := uq.DB.QueryRow(`
         SELECT id, name, password 
         FROM "user" 
         WHERE id = $1
     `, id).Scan(&user.ID, &user.Name, &user.Password)
-    
-    if err != nil {
-        return nil, err
-    }
-    return &user, nil
+
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
 }
 
 func (uq *UserQuery) GetUserNamesByIDs(ids []int) (map[int]string, error) {
 
-    rows, err := uq.DB.Query(`
+	rows, err := uq.DB.Query(`
         SELECT id, name 
         FROM "user" 
         WHERE id = ANY($1)
-    `, pq.Array(ids));
-    
-    userIdUserName := make(map[int]string);
+    `, pq.Array(ids))
 
-    if err != nil {
-        return nil, err
-    }
+	userIdUserName := make(map[int]string)
 
-    defer rows.Close()
+	if err != nil {
+		return nil, err
+	}
 
-    for rows.Next(){
-        var user User
-        if err := rows.Scan(&user.ID, &user.Name); err != nil {
-            return nil, err
-        } 
-        userIdUserName[user.ID] = user.Name;
-    }
+	defer rows.Close()
 
-    return userIdUserName, nil
+	for rows.Next() {
+		var user User
+		if err := rows.Scan(&user.ID, &user.Name); err != nil {
+			return nil, err
+		}
+		userIdUserName[user.ID] = user.Name
+	}
+
+	return userIdUserName, nil
 }
 
 func (uq *UserQuery) GetAllUsers() ([]User, error) {
-    rows, err := uq.DB.Query(`
+	rows, err := uq.DB.Query(`
         SELECT id, name, password 
         FROM "user"
     `)
-    if err != nil {
-        return nil, err
-    }
-    defer rows.Close()
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
 
-    var users []User
-    for rows.Next() {
-        var user User
-        if err := rows.Scan(&user.ID, &user.Name, &user.Password); err != nil {
-            return nil, err
-        }
-        users = append(users, user)
-    }
-    
-    if err = rows.Err(); err != nil {
-        return nil, err
-    }
-    
-    return users, nil
+	var users []User
+	for rows.Next() {
+		var user User
+		if err := rows.Scan(&user.ID, &user.Name, &user.Password); err != nil {
+			return nil, err
+		}
+		users = append(users, user)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return users, nil
 }
 
 func (uq *UserQuery) UpdateUser(id int, name, password string) error {
-    _, err := uq.DB.Exec(`
+	_, err := uq.DB.Exec(`
         UPDATE "user" 
         SET name = $1, password = $2 
         WHERE id = $3
     `, name, password, id)
-    return err
+	return err
 }
 
 func (uq *UserQuery) DeleteUser(id int) error {
-    _, err := uq.DB.Exec(`
+	_, err := uq.DB.Exec(`
         DELETE FROM "user" 
         WHERE id = $1
     `, id)
-    return err
+	return err
 }
 
 func (uq *UserQuery) GetUserExceptCurrent(id int) (*[]dto.UserWithoutPasswordDTO, error) {
-    rows, err := uq.DB.Query(`
+	rows, err := uq.DB.Query(`
         SELECT id, name
         FROM "user" 
         WHERE id != $1
     `, id)
-    
-    if err != nil {
-        return nil, err
-    }
 
-    defer rows.Close()
+	if err != nil {
+		return nil, err
+	}
 
-    var users []dto.UserWithoutPasswordDTO
-    for rows.Next() {
-        var user dto.UserWithoutPasswordDTO
-        if err := rows.Scan(&user.ID, &user.Name); err != nil {
-            return nil, err
-        }
-        users = append(users, user)
-    }
-    
-    if err = rows.Err(); err != nil {
-        return nil, err
-    }
+	defer rows.Close()
 
-    return &users, nil
+	var users []dto.UserWithoutPasswordDTO
+	for rows.Next() {
+		var user dto.UserWithoutPasswordDTO
+		if err := rows.Scan(&user.ID, &user.Name); err != nil {
+			return nil, err
+		}
+		users = append(users, user)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return &users, nil
 }

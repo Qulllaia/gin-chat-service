@@ -12,3 +12,6 @@ CREATE TABLE user (
 
 -- Привязка последовательности к таблице (опционально)
 ALTER SEQUENCE users_id_seq OWNED BY users.id;
+
+ALTER TABLE public."user" ADD email varchar NOT NULL;
+ALTER TABLE public."user" ADD CONSTRAINT user_unique UNIQUE (email);

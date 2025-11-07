@@ -9,23 +9,23 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type UserController struct{
+type UserController struct {
 	UQ *queries.UserQuery
-};
+}
 
 func (uc *UserController) CreateUser(context *gin.Context) {
 
-	var user UserDTO;
+	var user UserDTO
 
 	if err := context.ShouldBindJSON(&user); err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
-	} 
+	}
 
-	_, err := uc.UQ.InsertUser(user.Name, user.Password);
+	_, err := uc.UQ.InsertUser(user.Email, user.Name, user.Password)
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{
-			"error": "createUserException",
+			"error":   "createUserException",
 			"message": err.Error(),
 		})
 	} else {
@@ -36,15 +36,15 @@ func (uc *UserController) CreateUser(context *gin.Context) {
 }
 
 func (uc *UserController) GetAllUsers(context *gin.Context) {
-	users, err := uc.UQ.GetAllUsers();
+	users, err := uc.UQ.GetAllUsers()
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{
-			"error": "GetAllUsersException",
+			"error":   "GetAllUsersException",
 			"message": err.Error(),
 		})
 	} else {
 		context.JSON(http.StatusOK, gin.H{
-			"done": true,
+			"done":   true,
 			"result": users,
 		})
 	}
@@ -52,22 +52,22 @@ func (uc *UserController) GetAllUsers(context *gin.Context) {
 
 func (uc *UserController) GetUserByID(context *gin.Context) {
 
-	var userID UserIDURI;
+	var userID UserIDURI
 
 	if err := context.ShouldBindUri(&userID); err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	users, err := uc.UQ.GetUserByID(userID.ID);
+	users, err := uc.UQ.GetUserByID(userID.ID)
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{
-			"error": "GetUserByIDException",
+			"error":   "GetUserByIDException",
 			"message": err.Error(),
 		})
 	} else {
 		context.JSON(http.StatusOK, gin.H{
-			"done": true,
+			"done":   true,
 			"result": users,
 		})
 	}
@@ -75,17 +75,17 @@ func (uc *UserController) GetUserByID(context *gin.Context) {
 
 func (uc *UserController) UpdateUser(context *gin.Context) {
 
-	var user UserDTO;
+	var user UserDTO
 
 	if err := context.ShouldBindJSON(&user); err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
-	} 
+	}
 
-	err := uc.UQ.UpdateUser(user.ID, user.Name, user.Password);
+	err := uc.UQ.UpdateUser(user.ID, user.Name, user.Password)
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{
-			"error": "UpdateUserException",
+			"error":   "UpdateUserException",
 			"message": err.Error(),
 		})
 	} else {
@@ -96,17 +96,17 @@ func (uc *UserController) UpdateUser(context *gin.Context) {
 }
 
 func (uc *UserController) DeleteUser(context *gin.Context) {
-	var userID UserIDURI;
+	var userID UserIDURI
 
 	if err := context.ShouldBindUri(&userID); err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	err := uc.UQ.DeleteUser(userID.ID);
+	err := uc.UQ.DeleteUser(userID.ID)
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{
-			"error": "DeleteUserException",
+			"error":   "DeleteUserException",
 			"message": err.Error(),
 		})
 	} else {
@@ -118,26 +118,25 @@ func (uc *UserController) DeleteUser(context *gin.Context) {
 
 func (uc *UserController) GetUserExceptCurrent(context *gin.Context) {
 
-	claims, err := utils.ExtractClaimsFromCookie(context);
-
+	claims, err := utils.ExtractClaimsFromCookie(context)
 
 	if err != nil {
 		context.JSON(401, gin.H{
-			"error": "GetUserExceptCurrent",
+			"error":   "GetUserExceptCurrent",
 			"message": err.Error(),
 		})
 	}
-	users, err := uc.UQ.GetUserExceptCurrent(int(claims.UserID));
+	users, err := uc.UQ.GetUserExceptCurrent(int(claims.UserID))
 
 	if err != nil {
 		context.JSON(500, gin.H{
-			"error": "GetUserExceptCurrent",
+			"error":   "GetUserExceptCurrent",
 			"message": err.Error(),
 		})
 	}
 
 	context.JSON(200, gin.H{
-		"done": true,
+		"done":   true,
 		"result": users,
 	})
 

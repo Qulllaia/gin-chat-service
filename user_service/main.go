@@ -5,6 +5,7 @@ import (
 	"main/controller"
 	"main/database"
 	"main/database/queries"
+	"main/redis"
 	"main/router"
 	"main/user"
 	"time"
@@ -25,25 +26,26 @@ func main() {
 		MaxAge:           12 * time.Hour, // Кеширование CORS-префлайта
 	}))
 
-	config, err := config.CreateConfig();
+	config, err := config.CreateConfig()
 
 	if err != nil {
 		println(err.Error())
 		panic("CONFIG ERROR")
 	}
-    
-	
-	db, err := database.CreateConnection(config);
-	uq := queries.UserQueryConstructor(db);
-	aq := queries.AuthQueryConstructor(db);
-	controller := controller.NewController(uq, aq);
-	
-	go user.StartUserServer(uq);
-	
-	newRouter := router.NewRouter(app);
+	redisConnection := redis.NewRedisConnector()
+	defer redisConnection.Close()
 
-	newRouter.RegisterRouters(controller, config);
+	db, err := database.CreateConnection(config)
+	uq := queries.UserQueryConstructor(db)
+	aq := queries.AuthQueryConstructor(db)
+	controller := controller.NewController(uq, aq, redisConnection)
+
+	go user.StartUserServer(uq)
+
+	newRouter := router.NewRouter(app)
+
+	newRouter.RegisterRouters(controller, config)
 	if err == nil {
-		app.Run(":5000");
+		app.Run(":5000")
 	}
 }
