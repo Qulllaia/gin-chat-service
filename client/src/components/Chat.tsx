@@ -24,7 +24,7 @@ export function ChatPage() {
   const [currentUser, setCurrentUser] = useState<number>(0)
   const [chatHeader, setChatHeader] = useState<string>('Минималистичный Чат')
   const [isCreatingNewChat, setIsCreatingNewChat] = useState<boolean>(false);
-  const [chats, setChats] = useState<Chat[]>([]) 
+  const [chats, setChats] = useState<Chat[]>([])
   const [isBackgroundUpdateOpen, setIsBackgroundUpdateOpen] = useState<boolean>(false);
 
   const [previews, setPreviews] = useState<PreviewItem[]>([]);
@@ -33,11 +33,11 @@ export function ChatPage() {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     if (!e.target.files) return;
-    
+
     const files = Array.from(e.target.files);
     createPreviews(files);
   };
-  
+
   const createPreviews = (files: File[]): void => {
     const newPreviews: PreviewItem[] = [];
     const imageFiles = files.filter(file => file.type.startsWith('image/'));
@@ -48,7 +48,7 @@ export function ChatPage() {
 
     imageFiles.forEach(file => {
       const reader = new FileReader();
-      
+
       reader.onload = (e: ProgressEvent<FileReader>) => {
         if (!e.target?.result) return;
 
@@ -65,7 +65,7 @@ export function ChatPage() {
           setPreviews(newPreviews);
         }
       };
-      
+
       reader.readAsDataURL(file);
     });
   };
@@ -78,7 +78,7 @@ export function ChatPage() {
 
   const removePreview = (id: string): void => {
     setPreviews(prev => prev.filter(item => item.id !== id));
-    
+
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -94,8 +94,8 @@ export function ChatPage() {
     await axios.get(`http://localhost:5050/api/chat/history/${currentChatId}`, {
       method: "GET",
       withCredentials: true,
-    }).then((res)=> {
-      if(res.status === 200) {
+    }).then((res) => {
+      if (res.status === 200) {
         res.data.result.forEach((element: any) => {
           const message = {
             id: element.id,
@@ -106,135 +106,136 @@ export function ChatPage() {
           setMessages((messages) => [...messages, message])
         });
       } else {
-        navigate('/auth', { replace: true});
+        navigate('/auth', { replace: true });
       }
-    }).then(()=>scrollToBottom())
-    .catch((e)=> {
-      if(e.status === 401){
-        navigate('/auth', { replace: true});
-      }
-    });
+    }).then(() => scrollToBottom())
+      .catch((e) => {
+        if (e.status === 401) {
+          navigate('/auth', { replace: true });
+        }
+      });
   }
 
   const fetchChats = async () => {
-      await axios.get('http://localhost:5050/api/chat/chats',
-        {
-          withCredentials: true,
+    await axios.get('http://localhost:5050/api/chat/chats',
+      {
+        withCredentials: true,
+      }
+    ).then((res) => {
+      if (res.data.result) {
+        const friendList = res.data.result.map((chat: any) => {
+          return {
+            id: chat.ID,
+            name: chat.Name,
+            backgroundUrl: chat.Chat_background,
+            chatType: chat.Chat_type_id,
+            userId: chat.User_id,
+            lastMessage: chat.LastMessage,
+          } as Chat;
+        })
+        setChats(friendList);
+      }
+    })
+      .catch((e) => {
+        if (e.status === 401) {
+          navigate('/auth', { replace: true });
         }
-      ).then((res) => {
-          if(res.data.result){
-              const friendList = res.data.result.map((chat: any) => {
-                  return {
-                      id: chat.ID,
-                      name: chat.Name,
-                      backgroundUrl: chat.Chat_background,
-                      chatType: chat.Chat_type_id,
-                      userId: chat.User_id
-                  } as Chat;
-              })
-              setChats(friendList);
-          }
-      })
-      .catch((e)=> {
-          if(e.status === 401){
-              navigate('/auth', { replace: true});
-          }
       });
   }
 
   const scrollToBottom = () => {
     if (messagesEndRef.current) {
-        messagesEndRef.current.scrollTo({
-          top: messagesEndRef.current.scrollHeight,
-          behavior: 'auto'
-        });
+      messagesEndRef.current.scrollTo({
+        top: messagesEndRef.current.scrollHeight,
+        behavior: 'auto'
+      });
 
     }
   };
 
-  useEffect(()=> { 
+  useEffect(() => {
     currentChatIdRef.current = currentChatId;
-  },[currentChatId])
+  }, [currentChatId])
 
-  useEffect(() => { 
-      if (!ws.current) {
-        ws.current = new WebSocket('ws://localhost:5050/api/chat/ws?user_id=fslkfjslkfjslfs&chat_id=1');
+  useEffect(() => {
+    if (!ws.current) {
+      ws.current = new WebSocket('ws://localhost:5050/api/chat/ws?user_id=fslkfjslkfjslfs&chat_id=1');
+    }
+    // console.log('useeffect')
+    ws.current.onopen = () => {
+      fetchMEssagesHistory();
+    };
+
+    ws.current.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === "MESSAGE") {
+        const newMessage: Message = {
+          id: Date.now().toString(),
+          text: data.message,
+          sender: 'other',
+          chat_id: data.chat_id,
+          timestamp: new Date(),
+        };
+        if (currentChatIdRef.current === newMessage.chat_id)
+          setMessages((prev) => [...prev, newMessage]);
       }
-      // console.log('useeffect')
-      ws.current.onopen = () => {
-        fetchMEssagesHistory();
-      };
+      else if (data.type === 'NEW_CHAT') {
+        setCurrentChatId(data.chat_id as number);
+        fetchChats()
+      }
+      else if (data.type === "NEW_MULTIPLE_CHAT") {
+        fetchChats()
+      }
+      // TODO: Привести входные данные к общему формату
+      else if (data.online) {
+        setUsersOnline(prev => [data.online, ...prev])
+      }
+      else if (data.offline) {
+        setUsersOnline(prev => prev.filter((userId) => userId !== data.offline))
+      } else if (data.activeUsersIds) {
+        setUsersOnline(data.activeUsersIds)
+      }
+    };
 
-      ws.current.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        if(data.type === "MESSAGE") {
-          const newMessage: Message = {
-            id: Date.now().toString(),
-            text: data.message,
-            sender: 'other',
-            chat_id: data.chat_id,
-            timestamp: new Date(),
-          };
-          if(currentChatIdRef.current === newMessage.chat_id)
-            setMessages((prev) => [...prev, newMessage]);
-        }
-        else if (data.type === 'NEW_CHAT') {
-          setCurrentChatId(data.chat_id as number);
-          fetchChats()
-        }
-        else if (data.type === "NEW_MULTIPLE_CHAT") {
-          fetchChats()
-        }
-        // TODO: Привести входные данные к общему формату
-        else if (data.online) {
-          setUsersOnline(prev => [data.online, ...prev])
-        }
-        else if (data.offline) {
-          setUsersOnline(prev => prev.filter((userId)=> userId !== data.offline))
-        } else if(data.activeUsersIds) {
-          setUsersOnline(data.activeUsersIds)
-        }
-      };
+    ws.current.onclose = () => {
+      console.log('WebSocket disconnected');
+    };
 
-      ws.current.onclose = () => {
-        console.log('WebSocket disconnected');
-      };
+    ws.current.onerror = (error) => {
+      console.error('WebSocket error:', error);
+    };
 
-      ws.current.onerror = (error) => {
-        console.error('WebSocket error:', error);
-      };
-
-      return () => {
-          if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-            ws.current.close();
-            navigate('/auth', { replace: true});
-          }
-      };
+    return () => {
+      if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+        ws.current.close();
+        navigate('/auth', { replace: true });
+      }
+    };
   }, []);
 
 
-  useEffect(()=> {
+  useEffect(() => {
     scrollToBottom();
   }, [messages])
 
-  useEffect(()=>{
+  useEffect(() => {
     setMessages([]);
     fetchMEssagesHistory();
     let backgroundUrl;
     chats.forEach(chat => {
-      if(chat.id === currentChatId) {
+      if (chat.id === currentChatId) {
         backgroundUrl = chat.backgroundUrl;
       }
-    }) 
-    
+    })
+
     const backgroundDiv = document.getElementById('background-div') as HTMLElement;
-    if(backgroundUrl) {  
+    if (backgroundUrl) {
       backgroundDiv.style.backgroundImage = `url(http://localhost:5050${backgroundUrl})`;
       backgroundDiv.style.backgroundSize = 'cover';
       backgroundDiv.style.backgroundPosition = 'center';
       backgroundDiv.style.backgroundRepeat = 'no-repeat';
       currentChatIdRef.current = currentChatId;
-    } else { 
+    } else {
       backgroundDiv.style.backgroundImage = ``;
     }
   }, [currentChatId])
@@ -242,7 +243,7 @@ export function ChatPage() {
   const sendMessage = (text: string) => {
     if (ws.current && text.trim()) {
 
-      if(isCreatingNewChat) {
+      if (isCreatingNewChat) {
         ws.current.send(JSON.stringify({
           type: NEW_CHAT,
           user_id: currentUser.toString(),
@@ -256,36 +257,36 @@ export function ChatPage() {
           messages: text
         }));
       }
-        
+
       const newMessage: Message = {
-          id: Date.now().toString(),
-          text,
-          sender: 'user',
-          chat_id: currentChatId,
-          timestamp: new Date(),
+        id: Date.now().toString(),
+        text,
+        sender: 'user',
+        chat_id: currentChatId,
+        timestamp: new Date(),
       };
       setMessages((prev) => [...prev, newMessage]);
     }
   };
 
   const sendMultipleChatCreationNotify = (userIds: number[]) => {
-      if (ws.current) {
-          ws.current.send(JSON.stringify({
-            type: NEW_MULTIPLE_CHAT,
-            user_ids: userIds
-          }));
-          setIsCreatingNewChat(false);
-        }
+    if (ws.current) {
+      ws.current.send(JSON.stringify({
+        type: NEW_MULTIPLE_CHAT,
+        user_ids: userIds
+      }));
+      setIsCreatingNewChat(false);
+    }
   }
 
   const isOnlineStatusVisible = (): boolean => {
-    const data = chats.find((value: Chat, index: number, chats:Chat[])=> {
-      if(value.id === currentChatId) {
+    const data = chats.find((value: Chat, index: number, chats: Chat[]) => {
+      if (value.id === currentChatId) {
         return value
       }
-    }) 
-    if(data) {
-      if(data.chatType === "PRIVATECHAT") {
+    })
+    if (data) {
+      if (data.chatType === "PRIVATECHAT") {
         return true
       }
     }
@@ -293,54 +294,54 @@ export function ChatPage() {
   }
   return (
     <div className='chat-body'>
-      <ChatsList 
-        setCurrentChatId ={setCurrentChatId} 
+      <ChatsList
+        setCurrentChatId={setCurrentChatId}
         currentChatId={currentChatId}
-        setMessages={setMessages} 
-        setIsCreatingNewChat={setIsCreatingNewChat} 
+        setMessages={setMessages}
+        setIsCreatingNewChat={setIsCreatingNewChat}
         setCurrentUser={setCurrentUser}
         setChatHeader={setChatHeader}
         fetchChats={fetchChats}
         chats={chats}
         setChats={setChats}
-        sendMultipleChatCreationNotify = {sendMultipleChatCreationNotify}
+        sendMultipleChatCreationNotify={sendMultipleChatCreationNotify}
         usersOnline={usersOnline}
       />
-      <div className={currentChatId === 0 && currentUser === 0 ? "chat-container-hide" : "chat-container"}  id = 'background-div'>
-        <div className='chat-header-panel'> 
-            <div className="d-flex gap-4 align-items-center flex-wrap">
-                <div className="avatar-container">
-                    <img className="avatar"/>
-                    { 
-                      isOnlineStatusVisible() ? 
-                        <div className="status-indicator status-online"></div> 
-                          : 
-                        null
-                    }
-                </div>    
+      <div className={currentChatId === 0 && currentUser === 0 ? "chat-container-hide" : "chat-container"} id='background-div'>
+        <div className='chat-header-panel'>
+          <div className="d-flex gap-4 align-items-center flex-wrap">
+            <div className="avatar-container">
+              <img className="avatar" />
+              {
+                isOnlineStatusVisible() ?
+                  <div className="status-indicator status-online"></div>
+                  :
+                  null
+              }
             </div>
+          </div>
           <h5>{chatHeader}</h5>
-          <button className="buttons-group d-grid gap-2" onClick={()=>{
+          <button className="buttons-group d-grid gap-2" onClick={() => {
             setIsBackgroundUpdateOpen(true);
           }}>Изменить фон чата</button>
         </div>
-        <ParentForm isDialog={true} setIsOpen={setIsBackgroundUpdateOpen} isOpen ={isBackgroundUpdateOpen}>
+        <ParentForm isDialog={true} setIsOpen={setIsBackgroundUpdateOpen} isOpen={isBackgroundUpdateOpen}>
           <div className='scroll-controller'>
-              <h1 className="h3 mb-3 fw-normal">Вставьте картинку</h1> 
-              <div className="form-floating"> 
-                  <input type="file" className="form-control mb-2" id="floatingImage" placeholder="Password"  
-                    ref={fileInputRef}
-                    multiple
-                    accept="image/*"
-                    onChange={handleFileChange}
-                  /> 
-              </div>
-              <div className="image-upload"> 
+            <h1 className="h3 mb-3 fw-normal">Вставьте картинку</h1>
+            <div className="form-floating">
+              <input type="file" className="form-control mb-2" id="floatingImage" placeholder="Password"
+                ref={fileInputRef}
+                multiple
+                accept="image/*"
+                onChange={handleFileChange}
+              />
+            </div>
+            <div className="image-upload">
               <div className="preview-grid">
                 {previews.map(preview => (
                   <div key={preview.id} className="preview-item">
-                    <img 
-                      src={preview.url} 
+                    <img
+                      src={preview.url}
                       alt={preview.name}
                       className="preview-image"
                     />
@@ -348,54 +349,54 @@ export function ChatPage() {
                       <div className="file-name">{preview.name}</div>
                       <div className="file-size">{getFileSize(preview.file.size)}</div>
                     </div>
-                    <button 
+                    <button
                       onClick={() => removePreview(preview.id)}
                       className="buttons-group d-grid gap-2"
                       type="button"
                     >
                       Удалить
                     </button>
-                    <button 
+                    <button
                       onClick={() => {
                         const fileInput = document.getElementById('floatingImage') as HTMLInputElement;
                         const file = fileInput.files![0];
                         const formData = new FormData();
                         formData.append('image', file);
-                        formData.append('chat_id', String(currentChatId)); 
+                        formData.append('chat_id', String(currentChatId));
 
                         axios.post('http://localhost:5050/api/chat/background', formData,
-                        {
-                          withCredentials: true,
-                          headers: {
+                          {
+                            withCredentials: true,
+                            headers: {
                               'Content-Type': 'multipart/form-data',
-                          },
-                        })
-                        .then((res)=> {
-                          setIsBackgroundUpdateOpen(false)
-                          const fullImageUrl = res.data.result.full_url;
-                          
-                          const backgroundDiv = document.getElementById('background-div') as HTMLElement;
-                          backgroundDiv.style.backgroundImage = `url(http://${fullImageUrl})`;
-                          backgroundDiv.style.backgroundSize = 'cover';
-                          backgroundDiv.style.backgroundPosition = 'center';
-                          backgroundDiv.style.backgroundRepeat = 'no-repeat';
-                          let temp_chat_list = [] 
-                          chats.forEach(chat => {
-                            if (chat.id === currentChatId) {
-                              chat.backgroundUrl = res.data.result.url;
-                            }
-                            temp_chat_list.push(chat)
-                          })                           
+                            },
+                          })
+                          .then((res) => {
+                            setIsBackgroundUpdateOpen(false)
+                            const fullImageUrl = res.data.result.full_url;
 
-                        })
-                        .catch((e)=> { 
-                          console.log(e); 
-                        });
+                            const backgroundDiv = document.getElementById('background-div') as HTMLElement;
+                            backgroundDiv.style.backgroundImage = `url(http://${fullImageUrl})`;
+                            backgroundDiv.style.backgroundSize = 'cover';
+                            backgroundDiv.style.backgroundPosition = 'center';
+                            backgroundDiv.style.backgroundRepeat = 'no-repeat';
+                            let temp_chat_list = []
+                            chats.forEach(chat => {
+                              if (chat.id === currentChatId) {
+                                chat.backgroundUrl = res.data.result.url;
+                              }
+                              temp_chat_list.push(chat)
+                            })
+
+                          })
+                          .catch((e) => {
+                            console.log(e);
+                          });
                       }}
                       className="buttons-group d-grid gap-2"
                       type="button"
                     >
-                     Изменить фон 
+                      Изменить фон
                     </button>
                   </div>
                 ))}
@@ -406,7 +407,7 @@ export function ChatPage() {
                   Изображения не выбраны
                 </div>
               )}
-            </div> 
+            </div>
           </div>
         </ParentForm>
         <MessageList ref={messagesEndRef} messages={messages} />

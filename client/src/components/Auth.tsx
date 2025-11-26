@@ -47,7 +47,11 @@ export function Auth() {
             password
         })
         .catch((error) => {
-            setAuthError(error.response.data.message)
+            if(error.status === 500) {
+                setAuthError('Fatal Error')
+            } else {
+                setAuthError(error.response.data.message)
+            } 
         })
 
         if(result?.status === 200) {

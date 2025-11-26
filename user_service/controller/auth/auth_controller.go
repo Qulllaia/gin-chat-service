@@ -4,13 +4,14 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/smtp"
+
 	"main/config"
 	. "main/controller/dto"
 	"main/controller/utils"
 	"main/database/queries"
 	"main/redis"
-	"net/http"
-	"net/smtp"
 
 	"github.com/gin-gonic/gin"
 )
@@ -22,7 +23,6 @@ type AuthController struct {
 }
 
 func (ac *AuthController) LoginUser(context *gin.Context) {
-
 	var userDTO UserDTO
 
 	if err := context.ShouldBindJSON(&userDTO); err != nil {
@@ -31,11 +31,17 @@ func (ac *AuthController) LoginUser(context *gin.Context) {
 	}
 
 	user, err := ac.AQ.GetUserByNameOrEmail(userDTO.Name, userDTO.Email)
-
 	if err != nil {
 		context.JSON(http.StatusUnauthorized, gin.H{
 			"error":   "GetUserByIDException",
 			"message": err.Error(),
+		})
+		return
+	}
+
+	if user == nil {
+		context.JSON(http.StatusUnauthorized, gin.H{
+			"message": "Wrong Credentials",
 		})
 		return
 	}
@@ -48,7 +54,6 @@ func (ac *AuthController) LoginUser(context *gin.Context) {
 	}
 
 	jwtToken, err := utils.GenerateJWT(int64(user.ID), userDTO.Name)
-
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "CreatingScretKeyException",
@@ -201,7 +206,6 @@ func (ac *AuthController) VerifyResult(context *gin.Context) {
 	}
 
 	value, err := ac.RDB.GetData(token.Token)
-
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "VerifyResult",
@@ -221,7 +225,6 @@ func (ac *AuthController) VerifyResult(context *gin.Context) {
 	}
 
 	hasedPassword, err := utils.HashPassword(userDTO.Password)
-
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "HashingError",
@@ -230,7 +233,6 @@ func (ac *AuthController) VerifyResult(context *gin.Context) {
 	}
 
 	id, err := ac.UQ.InsertUser(userDTO.Email, userDTO.Name, hasedPassword)
-
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "createUserException",
@@ -240,7 +242,6 @@ func (ac *AuthController) VerifyResult(context *gin.Context) {
 	}
 
 	jwtToken, err := utils.GenerateJWT(id, userDTO.Name)
-
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "CreatingScretKeyException",

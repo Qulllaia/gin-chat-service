@@ -3,12 +3,13 @@ package dto
 import "github.com/lib/pq"
 
 type ChatListDTO struct {
-	Name      *string `db:"name"`
-	ID        int     `db:"id"`
-	Users     pq.Int64Array `db:"users"`
-	Chat_type_id string  `db:chat_type_id`
-	Chat_background *string  `db:chat_background`
-	User_id *int64 
+	Name            *string       `db:"name"`
+	ID              int           `db:"id"`
+	Users           pq.Int64Array `db:"users"`
+	Chat_type_id    string        `db:chat_type_id`
+	Chat_background *string       `db:chat_background`
+	User_id         *int64
+	LastMessage     string
 }
 
 type ChatIDURI struct {
@@ -20,6 +21,7 @@ type UserIDURI struct {
 }
 
 type UsersIDList struct {
-	IDs []int64 `json: "ids"`
-	GroupName string `json: "GroupName"`
+	IDs       []int64 `json: "ids"`
+	GroupName string  `json: "GroupName"`
 }
+

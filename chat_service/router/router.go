@@ -10,7 +10,7 @@ import (
 )
 
 type Router struct {
-	Router *gin.Engine;
+	Router *gin.Engine
 }
 
 func NewRouter(router *gin.Engine) *Router {
@@ -18,8 +18,9 @@ func NewRouter(router *gin.Engine) *Router {
 }
 
 func (r *Router) RegisterRouters(controller *controller.Controller, config *config.Config) {
-	api := r.Router.Group("/api", middleware.ConfigMiddleware(config));
-	chatRouter := chat_router.NewChat(api);
+	api := r.Router.Group("/api", middleware.ConfigMiddleware(config))
+	chatRouter := chat_router.NewChat(api)
 
-	chatRouter.ChatRoutes(controller);
+	chatRouter.ChatRoutes(controller)
 }
+

@@ -15,7 +15,7 @@ type Chat struct {
 }
 
 func NewChat(router *gin.RouterGroup) *Chat {
-	return &Chat{ ChatRouter: router};
+	return &Chat{ChatRouter: router}
 }
 
 func (a *Chat) ChatRoutes(controller *controller.Controller) {
@@ -28,3 +28,4 @@ func (a *Chat) ChatRoutes(controller *controller.Controller) {
 		api.POST("/background", middleware.ErrorMiddleware[*types.ImageResponse](controller.Chat.SetBackGround))
 	}
 }
+

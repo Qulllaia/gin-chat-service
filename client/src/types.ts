@@ -7,16 +7,17 @@ export interface Message {
 }
 
 export interface Chat {
-    id: number, 
-    name: string,
-    backgroundUrl: string, 
-    chatType: string,
-    userId: number | undefined 
+  id: number,
+  name: string,
+  backgroundUrl: string,
+  chatType: string,
+  lastMessage: string,
+  userId: number | undefined
 }
 
 export interface User {
-    id: number, 
-    name: string,
+  id: number,
+  name: string,
 }
 
 export const NEW_CHAT = 'NEW_CHAT'
