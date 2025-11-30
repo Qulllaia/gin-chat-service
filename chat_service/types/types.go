@@ -12,11 +12,12 @@ import (
 type MessageType string
 
 type MessageWS struct {
-	Chat_id  string `json:"chat_id"`
-	User_id  string `json:"user_id"`
-	User_ids []int  `json:"user_ids"`
-	Message  string `json:"messages"`
+	Chat_id  string      `json:"chat_id"`
+	User_id  string      `json:"user_id"`
+	User_ids []int       `json:"user_ids"`
+	Message  string      `json:"messages"`
 	Type     MessageType `json:"type"`
+	Index    int         `json: "index"`
 }
 
 type UserWSData struct {
@@ -45,22 +46,23 @@ type Handler interface {
 type Endpoint[T any] func(context *gin.Context) (ErrorType, T, error)
 
 type HttpResponse struct {
-	Done   bool        `json:"done"`
-	Result interface{} `json:"result,omitempty"`
-	ErrorType ErrorType `json:"error_type,omitempty"`
-	Error  string      `json:"error,omitempty"`
+	Done      bool        `json:"done"`
+	Result    interface{} `json:"result,omitempty"`
+	ErrorType ErrorType   `json:"error_type,omitempty"`
+	Error     string      `json:"error,omitempty"`
 }
 
 type ImageResponse struct {
-	Message string `json:"message"`
+	Message  string `json:"message"`
 	Filename string `json:"filename"`
-	Url string `json:"url"`
+	Url      string `json:"url"`
 	Full_url string `json:"full_url"`
 }
 
 const (
-	MESSAGE MessageType = "MESSAGE"
-	NEW_CHAT  = "NEW_CHAT"
-	NEW_MULTIPLE_CHAT = "NEW_MULTIPLE_CHAT"
-	USER_STATUS = "USER_STATUS"
+	MESSAGE           MessageType = "MESSAGE"
+	NEW_CHAT                      = "NEW_CHAT"
+	NEW_MULTIPLE_CHAT             = "NEW_MULTIPLE_CHAT"
+	USER_STATUS                   = "USER_STATUS"
+	MEDIA                         = "MEDIA"
 )

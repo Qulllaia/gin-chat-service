@@ -12,14 +12,16 @@ type HandlerManager struct {
 func NewHandlerManager(actor *ConnectorActor) *HandlerManager {
 	messageHandler := handlers.NewMessageHandler()
 	newChatHandler := handlers.NewNewChatHandler()
-	newMultiChatHandler := handlers.NewNewMultiChatHandler()	
-	newOnlineStatusHandler := handlers.NewOnlineStatusHandler()	
-
+	newMultiChatHandler := handlers.NewNewMultiChatHandler()
+	newOnlineStatusHandler := handlers.NewOnlineStatusHandler()
+	newMediaHandler := handlers.NewMediaHandler()
 	handlersMap := make(map[MessageType]Handler)
 
 	handlersMap[NEW_CHAT] = newChatHandler
 	handlersMap[MESSAGE] = messageHandler
 	handlersMap[NEW_MULTIPLE_CHAT] = newMultiChatHandler
 	handlersMap[USER_STATUS] = newOnlineStatusHandler
-	return &HandlerManager{ handlers: handlersMap}
+	handlersMap[MEDIA] = newMediaHandler
+	return &HandlerManager{handlers: handlersMap}
 }
+

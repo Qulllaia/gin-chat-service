@@ -6,6 +6,7 @@ import { ChatsList } from './ChatsList';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { ParentForm } from './ParentForm';
+import ChunkedAudioPlayer from './ChunkedAudioPlayer';
 
 interface PreviewItem {
   id: string;
@@ -294,6 +295,7 @@ export function ChatPage() {
   }
   return (
     <div className='chat-body'>
+      <ChunkedAudioPlayer ws={ws} />
       <ChatsList
         setCurrentChatId={setCurrentChatId}
         currentChatId={currentChatId}

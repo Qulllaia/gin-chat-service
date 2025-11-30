@@ -80,10 +80,10 @@ func (cq *ChatQueries) GetUsersChats(currentId int, users *[]dto.ChatListDTO) er
 		err = cq.DB.Get(&chat.LastMessage,
 			`SELECT ch.message FROM "ChatHistory" ch 
 			WHERE ch.id in (select max(id) as message_max_id FROM "ChatHistory" 
-			WHERE chat_id = $1)`,
-			chat.ID)
+			WHERE chat_id = $1)
+		`, chat.ID)
 		if err != nil {
-			panic(err)
+			return err
 		}
 
 		chats = append(chats, chat)
