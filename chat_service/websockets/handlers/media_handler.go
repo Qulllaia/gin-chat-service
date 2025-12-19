@@ -58,10 +58,17 @@ func (mh *MediaHandler) Handle(message types.MessageWS, messageType int, conn *w
 		return
 	}
 
+	fileInfo, err := file.Stat()
+	if err != nil {
+		fmt.Println("Ошибка получения информации:", err)
+		return
+	}
+
 	responseData, err := json.Marshal(map[string]interface{}{
-		"type": "audio_chunk",
-		"data": base64.StdEncoding.EncodeToString(buffer[:chunk]),
-		"size": size,
+		"type":       "audio_chunk",
+		"data":       base64.StdEncoding.EncodeToString(buffer[:chunk]),
+		"size":       size,
+		"size_bytes": fileInfo.Size(),
 	})
 	if err != nil {
 		fmt.Println(err.Error())

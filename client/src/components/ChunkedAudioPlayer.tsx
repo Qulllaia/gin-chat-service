@@ -4,16 +4,21 @@ interface ChunkedAudioPlayerProps {
   ws: React.RefObject<WebSocket | null>
 }
 
+const STATIC_BUFFER_READ_LIMIT = 1024 * 100
 const ChunkedAudioPlayer = ({ ws }: ChunkedAudioPlayerProps) => {
   console.log('ChunkedAudioPlayer render, ws.current:', ws.current);
 
   const audioRef = useRef<HTMLAudioElement>(null);
   const mediaSourceRef = useRef<MediaSource | null>(null);
   const currentIndex = useRef<number>(0);
+
+  const [currentIndexState, setCurrentIndexState] = useState<number>(0);
   const sourceBufferRef = useRef<SourceBuffer | null>(null);
   const [maxValue, setMaxValue] = useState<number>(0);
+  const [maxBytes, setMaxBytes] = useState<number>(0);
 
   const [audioProgress, setAudioProgress] = useState<number>(0);
+
   useEffect(() => {
     console.log('useEffect запущен');
 
@@ -34,10 +39,11 @@ const ChunkedAudioPlayer = ({ ws }: ChunkedAudioPlayerProps) => {
       console.log('Получено сообщение:', message.type);
 
       if (message.type === 'audio_chunk' && sourceBufferRef.current) {
-        console.log('Добавляем аудио-чанк, индекс:', currentIndex.current);
+        console.log('Добавляем аудио-чанк, индекс:', currentIndexState);
 
-        if (currentIndex.current === 0) {
+        if (currentIndexState === 0) {
           setMaxValue(message.size);
+          setMaxBytes(message.size_bytes)
         }
 
         console.log('Максимальное значение:', maxValue);
@@ -73,10 +79,10 @@ const ChunkedAudioPlayer = ({ ws }: ChunkedAudioPlayerProps) => {
 
         ws.current.send(JSON.stringify({
           type: 'MEDIA',
-          index: currentIndex.current,
+          index: currentIndexState,
         }));
 
-        console.log('Отправлен запрос на чанк:', currentIndex.current);
+        console.log('Отправлен запрос на чанк:', currentIndexState);
       }
     };
 
@@ -98,15 +104,15 @@ const ChunkedAudioPlayer = ({ ws }: ChunkedAudioPlayerProps) => {
       });
 
       if (timeToEnd < 2) {
-        currentIndex.current += 1;
+        setCurrentIndexState(currentIndexState + 1);
 
         if (ws.current) {
           ws.current.send(JSON.stringify({
             type: 'MEDIA',
-            index: currentIndex.current,
+            index: currentIndexState,
           }));
 
-          console.log('Запрошен следующий чанк:', currentIndex.current);
+          console.log('Запрошен следующий чанк:', currentIndexState);
         }
       }
     };
@@ -132,10 +138,17 @@ const ChunkedAudioPlayer = ({ ws }: ChunkedAudioPlayerProps) => {
         URL.revokeObjectURL(audio.src);
       }
     };
-  }, [ws, maxValue]);
+  }, [ws, maxValue, currentIndexState]);
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
-    console.log(Number(event.target.value));
+    let value = Number(event.target.value)
+    setAudioProgress(value)
+    let bytesFromStart = value / maxValue * maxBytes;
+    let newIndex = bytesFromStart / STATIC_BUFFER_READ_LIMIT;
+    let rsultValue = parseInt(newIndex.toString())
+    if (currentIndexState !== rsultValue) {
+      setCurrentIndexState(rsultValue);
+    }
   };
   return (
     <div>
