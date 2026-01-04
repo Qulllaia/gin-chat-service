@@ -1,6 +1,8 @@
 package main
 
 import (
+	"time"
+
 	"main/config"
 	"main/controller"
 	"main/database"
@@ -8,7 +10,6 @@ import (
 	"main/redis"
 	"main/router"
 	"main/user"
-	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -27,7 +28,6 @@ func main() {
 	}))
 
 	config, err := config.CreateConfig()
-
 	if err != nil {
 		println(err.Error())
 		panic("CONFIG ERROR")
@@ -36,6 +36,9 @@ func main() {
 	defer redisConnection.Close()
 
 	db, err := database.CreateConnection(config)
+	if err != nil {
+		panic(err.Error())
+	}
 	uq := queries.UserQueryConstructor(db)
 	aq := queries.AuthQueryConstructor(db)
 	controller := controller.NewController(uq, aq, redisConnection)
@@ -45,7 +48,5 @@ func main() {
 	newRouter := router.NewRouter(app)
 
 	newRouter.RegisterRouters(controller, config)
-	if err == nil {
-		app.Run(":5000")
-	}
+	app.Run(":5000")
 }
