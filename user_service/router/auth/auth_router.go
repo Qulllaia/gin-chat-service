@@ -21,5 +21,6 @@ func (a *Auth) AuthRoutes(controller *controller.Controller) {
 		api.POST("/login", controller.Auth.LoginUser)
 		api.POST("/verify", controller.Auth.SMTPApprove)
 		api.GET("/verify/:token", controller.Auth.VerifyResult)
+		api.GET("/logout", controller.Auth.Logout)
 	}
 }

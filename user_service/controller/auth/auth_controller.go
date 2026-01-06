@@ -264,3 +264,20 @@ func (ac *AuthController) VerifyResult(context *gin.Context) {
 		"done": true,
 	})
 }
+
+func (a *AuthController) Logout(context *gin.Context) {
+	context.
+		SetCookie(
+			"session_token",
+			"",
+			0,
+			"/",
+			"localhost",
+			false,
+			true,
+		)
+
+	context.JSON(http.StatusOK, gin.H{
+		"done": true,
+	})
+}

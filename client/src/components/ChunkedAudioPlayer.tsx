@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 
 interface ChunkedAudioPlayerProps {
   ws: React.RefObject<WebSocket | null>
@@ -6,7 +6,6 @@ interface ChunkedAudioPlayerProps {
 
 const STATIC_BUFFER_READ_LIMIT = 1024 * 100
 const ChunkedAudioPlayer = ({ ws }: ChunkedAudioPlayerProps) => {
-  console.log('ChunkedAudioPlayer render, ws.current:', ws.current);
 
   const audioRef = useRef<HTMLAudioElement>(null);
   const mediaSourceRef = useRef<MediaSource | null>(null);
@@ -19,12 +18,12 @@ const ChunkedAudioPlayer = ({ ws }: ChunkedAudioPlayerProps) => {
 
   const [audioProgress, setAudioProgress] = useState<number>(0);
 
+  const isSelectedTimecode = useRef<boolean>(false);
+
   useEffect(() => {
-    console.log('useEffect запущен');
 
     const audio = audioRef.current;
     if (!audio) {
-      console.log('audio элемент не найден');
       return;
     }
 
@@ -32,13 +31,11 @@ const ChunkedAudioPlayer = ({ ws }: ChunkedAudioPlayerProps) => {
     mediaSourceRef.current = mediaSource;
     audio.src = URL.createObjectURL(mediaSource);
 
-    console.log('MediaSource создан, URL:', audio.src);
 
     mediaSource.addEventListener('sourceopen', handleSourceOpen);
     audio.addEventListener('timeupdate', checkBuffer);
 
     return () => {
-      console.log('Очистка эффекта');
 
       mediaSource.removeEventListener('sourceopen', handleSourceOpen);
       audio.removeEventListener('timeupdate', checkBuffer);
@@ -57,20 +54,16 @@ const ChunkedAudioPlayer = ({ ws }: ChunkedAudioPlayerProps) => {
     };
   }, [ws, maxValue]);
 
-  const handleMessage = (event: MessageEvent) => {
+
+  const handleMessage = async (event: MessageEvent) => {
     const message = JSON.parse(event.data);
-    // console.log('Получено сообщение:', message.type);
 
     if (message.type === 'audio_chunk' && sourceBufferRef.current) {
-      console.log('Добавляем аудио-чанк, индекс:', currentIndex.current);
 
       if (currentIndex.current === 0) {
         setMaxValue(message.size);
         setMaxBytes(message.size_bytes)
       }
-
-      // console.log('Максимальное значение:', maxValue);
-
       const binaryString = atob(message.data);
 
       const bytes = new Uint8Array(binaryString.length);
@@ -79,32 +72,91 @@ const ChunkedAudioPlayer = ({ ws }: ChunkedAudioPlayerProps) => {
         bytes[i] = binaryString.charCodeAt(i);
       }
 
-      if (!sourceBufferRef.current.updating) {
-        sourceBufferRef.current.appendBuffer(bytes);
+      if (isSelectedTimecode.current) {
+        sourceBufferRef.current.abort();
+
+        await new Promise(resolve => setTimeout(resolve, 50));
+        try {
+
+          if (sourceBufferRef.current.updating) {
+            await waitForUpdateEnd(sourceBufferRef.current);
+          }
+
+          if (sourceBufferRef.current.buffered.length > 0) {
+            const end = sourceBufferRef.current.buffered.end(sourceBufferRef.current.buffered.length - 1);
+            sourceBufferRef.current.remove(0, end);
+            await waitForUpdateEnd(sourceBufferRef.current);
+          }
+          sourceBufferRef.current.timestampOffset = 0;
+          isSelectedTimecode.current = false;
+
+          if (!sourceBufferRef.current.updating) {
+            sourceBufferRef.current.appendBuffer(bytes);
+          } else {
+            setTimeout(() => {
+              if (sourceBufferRef.current && !sourceBufferRef.current.updating) {
+                sourceBufferRef.current.appendBuffer(bytes);
+              }
+            }, 100);
+          }
+        } catch (error) {
+          console.error('Ошибка при очистке/добавлении буфера:', error);
+        }
+
+
+      } else {
+
+        if (!sourceBufferRef.current.updating) {
+          sourceBufferRef.current.appendBuffer(bytes);
+        } else {
+          setTimeout(() => {
+            if (sourceBufferRef.current && !sourceBufferRef.current.updating) {
+              sourceBufferRef.current.appendBuffer(bytes);
+            }
+          }, 100);
+        }
       }
+
     }
   };
 
+  const waitForUpdateEnd = (sourceBuffer: SourceBuffer): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      const onUpdateEnd = () => {
+        sourceBuffer.removeEventListener('updateend', onUpdateEnd);
+        sourceBuffer.removeEventListener('error', onError);
+        resolve();
+      };
+
+      const onError = (e: Event) => {
+        sourceBuffer.removeEventListener('updateend', onUpdateEnd);
+        sourceBuffer.removeEventListener('error', onError);
+        reject(new Error('SourceBuffer update failed'));
+      };
+
+      sourceBuffer.addEventListener('updateend', onUpdateEnd, { once: true });
+      sourceBuffer.addEventListener('error', onError, { once: true });
+    });
+  };
+
   const handleSourceOpen = async () => {
-    // console.log('sourceopen событие');
     if (mediaSourceRef.current) {
 
       if (!mediaSourceRef.current.sourceBuffers.length) {
         const sourceBuffer = mediaSourceRef.current.addSourceBuffer('audio/mpeg');
         sourceBufferRef.current = sourceBuffer;
-
-        // console.log('SourceBuffer создан');
       }
 
       if (ws.current) {
-        ws.current.addEventListener('message', handleMessage);
+        if (ws.current.readyState !== WebSocket.CONNECTING) {
 
-        ws.current.send(JSON.stringify({
-          type: 'MEDIA',
-          index: currentIndex.current,
-        }));
+          ws.current.addEventListener('message', handleMessage);
 
-        // console.log('Отправлен запрос на чанк:', currentIndex.current);
+          ws.current.send(JSON.stringify({
+            type: 'MEDIA',
+            index: currentIndex.current,
+          }));
+        }
       }
     }
   };
@@ -122,11 +174,6 @@ const ChunkedAudioPlayer = ({ ws }: ChunkedAudioPlayerProps) => {
 
     const timeToEnd = bufferedEnd - audio.currentTime;
     setAudioProgress(STATIC_BUFFER_READ_LIMIT * currentIndex.current)
-    // console.log('Проверка буфера:', {
-    //   bufferedEnd,
-    //   currentTime: audio.currentTime,
-    //   timeToEnd
-    // });
 
     if (timeToEnd < 2) {
       currentIndex.current = currentIndex.current + 1;
@@ -137,7 +184,6 @@ const ChunkedAudioPlayer = ({ ws }: ChunkedAudioPlayerProps) => {
           index: currentIndex.current,
         }));
 
-        // console.log('Запрошен следующий чанк:', currentIndex.current);
       }
     }
   };
@@ -158,8 +204,10 @@ const ChunkedAudioPlayer = ({ ws }: ChunkedAudioPlayerProps) => {
         }));
       }
     }
-  };
 
+    isSelectedTimecode.current = true;
+    console.warn('handleChangeSlider', isSelectedTimecode.current);
+  };
 
   return (
     <div>
