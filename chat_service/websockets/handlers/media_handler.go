@@ -4,9 +4,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"os"
-
 	"main/types"
+	"os"
 
 	"github.com/gorilla/websocket"
 	"github.com/hcl/audioduration"
@@ -45,14 +44,23 @@ func (mh *MediaHandler) Handle(message types.MessageWS, messageType int, conn *w
 
 	defer file.Close()
 
+	// TODO: Refactoring
 	buffer := make([]byte, STATIC_BUFFER_READ_LIMIT)
 	chunk, err := file.ReadAt(buffer, int64(STATIC_BUFFER_READ_LIMIT*index))
 	if err != nil {
 		fmt.Println(err.Error())
+
+		responseData, err := json.Marshal(map[string]interface{}{
+			"type": "audio_end",
+		})
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+		conn.WriteMessage(messageType, []byte(responseData))
 		return
 	}
 
-	size, err := audioduration.Mp3(file)
+	secondsDuration, err := audioduration.Mp3(file)
 	if err != nil {
 		fmt.Println(err.Error())
 		return
@@ -63,16 +71,22 @@ func (mh *MediaHandler) Handle(message types.MessageWS, messageType int, conn *w
 		fmt.Println("Ошибка получения информации:", err)
 		return
 	}
-
-	responseData, err := json.Marshal(map[string]interface{}{
-		"type":       "audio_chunk",
-		"data":       base64.StdEncoding.EncodeToString(buffer[:chunk]),
-		"size":       size,
-		"size_bytes": fileInfo.Size(),
+	var responseData []byte
+	responseData, err = json.Marshal(map[string]interface{}{
+		"type":          "audio_chunk",
+		"data":          base64.StdEncoding.EncodeToString(buffer[:chunk]),
+		"audio_seconds": secondsDuration,
+		"size_bytes":    fileInfo.Size(),
 	})
 	if err != nil {
 		fmt.Println(err.Error())
-		return
+
+		responseData, err = json.Marshal(map[string]interface{}{
+			"type": "audio_end",
+		})
+		if err != nil {
+			fmt.Println(err.Error())
+		}
 	}
 	conn.WriteMessage(messageType, []byte(responseData))
 }

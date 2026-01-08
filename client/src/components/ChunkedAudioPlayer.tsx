@@ -11,9 +11,8 @@ const ChunkedAudioPlayer = ({ ws }: ChunkedAudioPlayerProps) => {
   const mediaSourceRef = useRef<MediaSource | null>(null);
   const currentIndex = useRef<number>(0);
 
-  const [currentIndexState, setCurrentIndexState] = useState<number>(0);
   const sourceBufferRef = useRef<SourceBuffer | null>(null);
-  const [maxValue, setMaxValue] = useState<number>(0);
+  const [durationValue, setDurationValue] = useState<number>(0);
   const [maxBytes, setMaxBytes] = useState<number>(0);
 
   const [audioProgress, setAudioProgress] = useState<number>(0);
@@ -52,16 +51,23 @@ const ChunkedAudioPlayer = ({ ws }: ChunkedAudioPlayerProps) => {
         URL.revokeObjectURL(audio.src);
       }
     };
-  }, [ws, maxValue]);
+  }, [ws]);
 
 
   const handleMessage = async (event: MessageEvent) => {
     const message = JSON.parse(event.data);
 
+    if (message.type === 'audio_end') {
+      audioRef.current?.pause();
+      setAudioProgress(0);
+      currentIndex.current = 0;
+    }
+
     if (message.type === 'audio_chunk' && sourceBufferRef.current) {
+      console.warn("in")
 
       if (currentIndex.current === 0) {
-        setMaxValue(message.size);
+        setDurationValue(message.audio_duration);
         setMaxBytes(message.size_bytes)
       }
       const binaryString = atob(message.data);
@@ -75,9 +81,9 @@ const ChunkedAudioPlayer = ({ ws }: ChunkedAudioPlayerProps) => {
       if (isSelectedTimecode.current) {
         sourceBufferRef.current.abort();
 
-        await new Promise(resolve => setTimeout(resolve, 50));
         try {
 
+          console.warn("sourceBufferRef.current.updating", sourceBufferRef.current.updating)
           if (sourceBufferRef.current.updating) {
             await waitForUpdateEnd(sourceBufferRef.current);
           }
@@ -87,7 +93,12 @@ const ChunkedAudioPlayer = ({ ws }: ChunkedAudioPlayerProps) => {
             sourceBufferRef.current.remove(0, end);
             await waitForUpdateEnd(sourceBufferRef.current);
           }
+
+          console.warn("sourceBufferRef.current.timestampOffset ", sourceBufferRef.current.timestampOffset)
           sourceBufferRef.current.timestampOffset = 0;
+          audioRef.current!.currentTime = 0;
+
+          console.warn("sourceBufferRef.current.timestampOffset ", sourceBufferRef.current.timestampOffset)
           isSelectedTimecode.current = false;
 
           if (!sourceBufferRef.current.updating) {
@@ -170,12 +181,21 @@ const ChunkedAudioPlayer = ({ ws }: ChunkedAudioPlayerProps) => {
     if (buffered.length === 0) return;
 
     const bufferedEnd = buffered.end(buffered.length - 1);
+    console.log(buffered.start(buffered.length - 1))
 
 
+    // TODO: проблема перемотки в этой строчке. необходимо устранить проблему с тем, что
+    // аудио не соответствует текущему буферу или сделать так, чтобы буфер считал конец не
+    // завися от аудио
     const timeToEnd = bufferedEnd - audio.currentTime;
     setAudioProgress(STATIC_BUFFER_READ_LIMIT * currentIndex.current)
 
-    if (timeToEnd < 2) {
+    if (timeToEnd < 2 && !sourceBufferRef.current?.updating && !isSelectedTimecode.current) {
+      console.warn('pidars kotoriy vinoven v tom, chto u menya nichego ne rabotaet', currentIndex.current,
+        bufferedEnd,
+        buffered.start(buffered.length - 1),
+        audio.currentTime)
+
       currentIndex.current = currentIndex.current + 1;
 
       if (ws.current) {
@@ -195,7 +215,7 @@ const ChunkedAudioPlayer = ({ ws }: ChunkedAudioPlayerProps) => {
     let rsultValue = parseInt(index.toString())
     console.log(value, index, rsultValue)
 
-    if (currentIndexState !== rsultValue) {
+    if (currentIndex.current !== rsultValue) {
       currentIndex.current = rsultValue;
       if (ws.current) {
         ws.current.send(JSON.stringify({
@@ -212,7 +232,13 @@ const ChunkedAudioPlayer = ({ ws }: ChunkedAudioPlayerProps) => {
   return (
     <div>
       <audio ref={audioRef} controls />
-      <label htmlFor="customRange1" className="form-label">Example range</label>
+      <button onClick={() => {
+        if (audioRef.current?.paused) {
+          audioRef.current?.play();
+        } else {
+          audioRef.current?.pause();
+        }
+      }}>play</button>
       <input onChange={(event) => handleChangeSlider(event, ws)} max={maxBytes} value={audioProgress} type="range" className="form-range" id="customRange1" />
 
     </div >
