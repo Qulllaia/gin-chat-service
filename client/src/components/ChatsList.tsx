@@ -68,35 +68,97 @@ export function ChatsList({
   };
 
   const createChat = async (user_id: number) => {
-    setMessages([])
+    const existingPrivateChat = chats.find(
+      (c: Chat) => c.chatType === 'PRIVATECHAT' && c.userId === user_id
+    );
+
     setIsChatCreatonOpen(false);
+
+    if (existingPrivateChat) {
+      setMessages([]);
+      setIsCreatingNewChat(false);
+      setCurrentUser(0);
+      setCurrentChatId(existingPrivateChat.id);
+      setChatHeader(existingPrivateChat.name);
+      return;
+    }
+
+    setMessages([]);
+    setCurrentChatId(0);
     setIsCreatingNewChat(true);
-    setCurrentUser(user_id)
+    setCurrentUser(user_id);
   }
+
+  const deleteChat = async (chatId: number, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!window.confirm('Удалить этот чат и все сообщения?')) {
+      return;
+    }
+
+    try {
+      const res = await axios.delete(`http://localhost:5050/api/chat/chats/${chatId}`, {
+        withCredentials: true,
+      });
+
+      if (res.status !== 200 || !res.data?.done) {
+        return;
+      }
+
+      if (currentChatId === chatId) {
+        setCurrentChatId(0);
+        setMessages([]);
+        setChatHeader('Минималистичный Чат');
+      }
+
+      setChats((prev: Chat[]) => prev.filter((c) => c.id !== chatId));
+      await fetchChats();
+    } catch (err) {
+      console.error('Failed to delete chat', err);
+    }
+  };
+
+  const openGroupChatModal = () => {
+    setSelectedUsers([]);
+    setGroupName('');
+    setIsMultiChatCreationOpen(true);
+  };
 
   const createMultipleChat = async () => {
-    setMessages([])
-    setIsChatCreatonOpen(false);
+    if (selectedUsers.length === 0) {
+      window.alert('Выберите хотя бы одного пользователя');
+      return;
+    }
+
+    if (!groupName.trim()) {
+      window.alert('Введите имя группы');
+      return;
+    }
+
+    const idsToSend = [...selectedUsers];
+
+    setMessages([]);
+    setCurrentChatId(0);
+    setIsMultiChatCreationOpen(false);
     setIsCreatingNewChat(true);
 
-    await axios.post('http://localhost:5050/api/chat/chats', {
-      IDs: selectedUsers,
-      GroupName: groupName
-    },
-      {
-        withCredentials: true,
-      })
-      .then(() => {
-        sendMultipleChatCreationNotify(selectedUsers)
-      })
-      .catch((e) => {
-        if (e.status === 401) {
-          navigate('/auth', { replace: true });
-        }
-      });
-    fetchChats();
-    setGroupName('');
-  }
+    try {
+      await axios.post(
+        'http://localhost:5050/api/chat/chats',
+        { ids: idsToSend, GroupName: groupName.trim() },
+        { withCredentials: true },
+      );
+      sendMultipleChatCreationNotify(idsToSend);
+      setSelectedUsers([]);
+      setGroupName('');
+      await fetchChats();
+    } catch (e: any) {
+      if (e?.response?.status === 401) {
+        navigate('/auth', { replace: true });
+      }
+    }
+  };
 
   useEffect(() => {
     fetchChats()
@@ -112,11 +174,15 @@ export function ChatsList({
         isDialog={true}
         isOpen={isChatCreationOpen}
         setIsOpen={setIsChatCreatonOpen}
+        backdropClassName="chat-modal-backdrop"
+        contentClassName="chat-modal-content"
       >
         <div className="user-list">
-          <div className="d-flex flex-column align-items-stretch bg-body-tertiary w-100 h-100">
+          <h2 className="h3 mb-3 fw-normal">Выберите пользователя</h2>
+          <div className="d-flex flex-column align-items-stretch w-100 h-100">
             {users.map((val) => {
               return <UserCard
+                key={val.id}
                 user={val}
                 createChatHandler={createChat}
                 handleCheckboxChange={handleCheckboxChange}
@@ -130,68 +196,78 @@ export function ChatsList({
         isDialog={true}
         isOpen={isMultiChatCreationOpen}
         setIsOpen={setIsMultiChatCreationOpen}
+        backdropClassName="chat-modal-backdrop"
+        contentClassName="chat-modal-content"
       >
         <div className="user-list">
-          <button
-            className="btn btn-outline-secondary m-2"
-            onClick={() => {
-              setIsMultiChatCreationOpen(false);
-              createMultipleChat()
-            }}
-          >
-            Создать чат с выбранными пользователями
-          </button>
-
-          <div className="form-floating">
-            <input type="text" className="form-control mb-2" id="floatingGroupName"
-              onChange={(event) => {
-                setGroupName(event.target.value);
-              }} />
-            <label htmlFor="floatingGroupName">Имя группы</label>
+          <h2 className="h3 mb-3 fw-normal">Новая группа</h2>
+          <div className="chat-modal-field">
+            <label className="chat-modal-label" htmlFor="floatingGroupName">Имя группы</label>
+            <input
+              type="text"
+              className="chat-modal-input"
+              id="floatingGroupName"
+              placeholder="Например: Команда"
+              value={groupName}
+              onChange={(event) => setGroupName(event.target.value)}
+            />
           </div>
-
-          <div className="d-flex flex-column align-items-stretch bg-body-tertiary w-100 h-100">
-            {users.map((val) => {
-              return <UserCard
+          <p className="chat-modal-hint">
+            Выбрано: {selectedUsers.length}
+          </p>
+          <div className="chat-modal-user-picker">
+            {users.map((val) => (
+              <UserCard
+                key={val.id}
                 user={val}
                 createChatHandler={createChat}
                 handleCheckboxChange={handleCheckboxChange}
                 checkboxAvaible={true}
-              ></UserCard>
-            })}
+                isSelected={selectedUsers.includes(val.id)}
+              />
+            ))}
           </div>
+          <button
+            type="button"
+            className="chat-btn w-100 mt-3"
+            onClick={() => void createMultipleChat()}
+          >
+            Создать чат с выбранными
+          </button>
         </div>
       </ParentForm>
       <div className="d-grid vh-100  w-100" style={{ gridTemplateRows: 'auto 1fr' }}>
-        <div className="buttons-group d-grid gap-1" style={{ gridTemplateColumns: '1fr auto 1fr' }}>
-
+        <div className="chat-sidebar-toolbar buttons-group">
           <button
-            className="btn btn-outline-secondary m-2 exit-button"
-
+            type="button"
+            className="chat-btn chat-btn-logout"
             onClick={() => logoutFunction()}
+            title="Выйти из аккаунта"
+            aria-label="Выйти из аккаунта"
           >
-            <img className='button-image' src='/img/exit.png' alt='Выход' />
+            <svg className="chat-btn-logout-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H9m4 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1" />
+            </svg>
+            <span className="chat-btn-logout-label">Выход</span>
           </button>
           <button
-            className="btn btn-outline-secondary m-2"
+            className="chat-btn"
             type="button"
             onClick={() => setIsChatCreatonOpen(true)}
           >
-            Написать пользователю
+            Написать
           </button>
           <button
-            className="btn btn-outline-secondary m-2"
+            className="chat-btn"
             type="button"
-            onClick={() => setIsMultiChatCreationOpen(true)}
+            onClick={openGroupChatModal}
           >
-            Создать чат
+            Группа
           </button>
         </div>
         <div className="chat-list">
-          <div className="d-flex flex-column align-items-stretch bg-body-tertiary w-100 h-100">
-            <a className="d-flex align-items-center flex-shrink-0 p-3 link-body-emphasis text-decoration-none border-bottom">
-              <span className="fs-5 fw-semibold">Список чатов</span>
-            </a>
+          <div className="d-flex flex-column align-items-stretch w-100 h-100">
+            <div className="chat-sidebar-title">Список чатов</div>
             {chats.map((Chat: Chat) => (
               <ChatCard
                 key={Chat.id}
@@ -200,6 +276,7 @@ export function ChatsList({
                 currentChatId={currentChatId}
                 setChatHeader={setChatHeader}
                 usersOnline={usersOnline}
+                onDeleteChat={deleteChat}
               />
             ))}
           </div>

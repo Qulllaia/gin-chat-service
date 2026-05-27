@@ -167,3 +167,47 @@ func (cc *ChatController) SetBackGround(context *gin.Context) (ErrorType, *Image
 	}, nil
 }
 
+func (cc *ChatController) DeleteChat(context *gin.Context) (ErrorType, bool, error) {
+	claims, err := utils.ExtractClaimsFromCookie(context)
+	if err != nil {
+		return ClaimsExtractingError, false, err
+	}
+
+	var chatID ChatIDURI
+	if err := context.ShouldBindUri(&chatID); err != nil {
+		return UriParsingError, false, err
+	}
+
+	users, err := cc.CQ.DeleteChat(chatID.ID, claims.UserID)
+	if err != nil {
+		return DatabaseError, false, err
+	}
+
+	for _, userID := range users {
+		if err := cc.RDB.DeleteData(strconv.Itoa(int(userID))); err != nil {
+			return CacheError, false, err
+		}
+	}
+
+	return NoError, true, nil
+}
+
+func (cc *ChatController) GetChatMembers(context *gin.Context) (ErrorType, []dto.ChatMemberDTO, error) {
+	claims, err := utils.ExtractClaimsFromCookie(context)
+	if err != nil {
+		return ClaimsExtractingError, nil, err
+	}
+
+	var chatID ChatIDURI
+	if err := context.ShouldBindUri(&chatID); err != nil {
+		return UriParsingError, nil, err
+	}
+
+	members, err := cc.CQ.GetChatMembers(chatID.ID, claims.UserID)
+	if err != nil {
+		return DatabaseError, nil, err
+	}
+
+	return NoError, members, nil
+}
+

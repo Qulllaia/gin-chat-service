@@ -54,3 +54,34 @@ func (s *Server) GetUserInfo(chatIdAndUserIds map[string]string, chats *[]dto.Ch
 	return nil
 }
 
+func (s *Server) GetUserNamesByIDs(userIDs []int) (map[int]string, error) {
+	if len(userIDs) == 0 {
+		return map[int]string{}, nil
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	reqMap := make(map[string]string, len(userIDs))
+	for _, id := range userIDs {
+		key := strconv.Itoa(id)
+		reqMap[key] = key
+	}
+
+	res, err := s.userClient.GetUser(ctx, &UserRequest{ChatIdAndUserIds: reqMap})
+	if err != nil {
+		return nil, err
+	}
+
+	names := make(map[int]string, len(res.ChatIdAndUserNames))
+	for chatID, name := range res.ChatIdAndUserNames {
+		id, err := strconv.Atoi(chatID)
+		if err != nil {
+			continue
+		}
+		names[id] = name
+	}
+
+	return names, nil
+}
+

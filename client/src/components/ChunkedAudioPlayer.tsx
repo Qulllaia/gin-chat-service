@@ -67,6 +67,9 @@ const ChunkedAudioPlayer = ({ ws }: ChunkedAudioPlayerProps) => {
       console.warn("in")
 
       if (currentIndex.current === 0) {
+        if (message.audio_duration) {
+          mediaSourceRef.current!.duration = parseFloat(message.audio_duration);
+        }
         setDurationValue(message.audio_duration);
         setMaxBytes(message.size_bytes)
       }
@@ -89,14 +92,15 @@ const ChunkedAudioPlayer = ({ ws }: ChunkedAudioPlayerProps) => {
           }
 
           if (sourceBufferRef.current.buffered.length > 0) {
-            const end = sourceBufferRef.current.buffered.end(sourceBufferRef.current.buffered.length - 1);
-            sourceBufferRef.current.remove(0, end);
-            await waitForUpdateEnd(sourceBufferRef.current);
+            // const end = sourceBufferRef.current.buffered.end(sourceBufferRef.current.buffered.length - 1);
+            // sourceBufferRef.current.remove(0, end);
+            // await waitForUpdateEnd(sourceBufferRef.current);
           }
 
-          console.warn("sourceBufferRef.current.timestampOffset ", sourceBufferRef.current.timestampOffset)
-          sourceBufferRef.current.timestampOffset = 0;
-          audioRef.current!.currentTime = 0;
+          // console.warn("sourceBufferRef.current.timestampOffset ", sourceBufferRef.current.timestampOffset)
+          // sourceBufferRef.current.timestampOffset = 0;
+          //
+          // audioRef.current!.currentTime = 0;
 
           console.warn("sourceBufferRef.current.timestampOffset ", sourceBufferRef.current.timestampOffset)
           isSelectedTimecode.current = false;
@@ -152,7 +156,6 @@ const ChunkedAudioPlayer = ({ ws }: ChunkedAudioPlayerProps) => {
 
   const handleSourceOpen = async () => {
     if (mediaSourceRef.current) {
-
       if (!mediaSourceRef.current.sourceBuffers.length) {
         const sourceBuffer = mediaSourceRef.current.addSourceBuffer('audio/mpeg');
         sourceBufferRef.current = sourceBuffer;
@@ -172,8 +175,7 @@ const ChunkedAudioPlayer = ({ ws }: ChunkedAudioPlayerProps) => {
     }
   };
 
-  const checkBuffer = () => {
-
+  const checkBuffer = (event: any) => {
     const audio = audioRef.current;
     if (!audio) return;
 
@@ -181,30 +183,32 @@ const ChunkedAudioPlayer = ({ ws }: ChunkedAudioPlayerProps) => {
     if (buffered.length === 0) return;
 
     const bufferedEnd = buffered.end(buffered.length - 1);
-    console.log(buffered.start(buffered.length - 1))
 
+    console.log(sourceBufferRef.current!.timestampOffset)
 
     // TODO: проблема перемотки в этой строчке. необходимо устранить проблему с тем, что
     // аудио не соответствует текущему буферу или сделать так, чтобы буфер считал конец не
     // завися от аудио
+
     const timeToEnd = bufferedEnd - audio.currentTime;
     setAudioProgress(STATIC_BUFFER_READ_LIMIT * currentIndex.current)
 
     if (timeToEnd < 2 && !sourceBufferRef.current?.updating && !isSelectedTimecode.current) {
-      console.warn('pidars kotoriy vinoven v tom, chto u menya nichego ne rabotaet', currentIndex.current,
+      console.warn('pidars kotoriy vinoven v tom, chto u menya nichego ne rabotaet',
+        currentIndex.current,
         bufferedEnd,
         buffered.start(buffered.length - 1),
-        audio.currentTime)
-
-      currentIndex.current = currentIndex.current + 1;
+        audio.currentTime
+      )
 
       if (ws.current) {
         ws.current.send(JSON.stringify({
           type: 'MEDIA',
           index: currentIndex.current,
         }));
-
       }
+
+      currentIndex.current = currentIndex.current + 1;
     }
   };
 

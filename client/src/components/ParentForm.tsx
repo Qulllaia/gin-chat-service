@@ -1,4 +1,5 @@
-import { ReactNode, useEffect, useState } from "react"
+import { ReactNode } from "react"
+import { ModalCloseButton } from "./ModalCloseButton"
 import '../styles/ParentForm.css'
 
 type ModalProps = {
@@ -6,9 +7,18 @@ type ModalProps = {
   isDialog:boolean;
   isOpen: boolean; 
   setIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  contentClassName?: string;
+  backdropClassName?: string;
 };
 
-export const ParentForm: React.FC<ModalProps> = ({children, isDialog, isOpen, setIsOpen}) => {
+export const ParentForm: React.FC<ModalProps> = ({
+  children,
+  isDialog,
+  isOpen,
+  setIsOpen,
+  contentClassName,
+  backdropClassName,
+}) => {
     const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
         if (e.target === e.currentTarget) {
             setIsOpen(false);
@@ -16,19 +26,17 @@ export const ParentForm: React.FC<ModalProps> = ({children, isDialog, isOpen, se
     };
 
     return (
-        <div>
+        <div className={isOpen ? "parent-form-host parent-form-host--open" : "parent-form-host"}>
             {isOpen &&
-            <div id="form" className="background" onClick={(e) => handleBackdropClick(e)}>
-                <div className="content">
-                    {
-                        isDialog && 
-                        <svg className="svg-cross" width="30" height="30" viewBox="0 0 24 24"
-                            onClick={() => setIsOpen(false)}
-                        >
-                            <line x1="2" y1="2" x2="22" y2="22" stroke="#000" stroke-width="2"/>
-                            <line x1="22" y1="2" x2="2" y2="22" stroke="#000" stroke-width="2"/>
-                        </svg>
-                    }
+            <div
+                id="form"
+                className={["background", backdropClassName].filter(Boolean).join(" ")}
+                onClick={(e) => handleBackdropClick(e)}
+            >
+                <div className={["content", contentClassName].filter(Boolean).join(" ")}>
+                    {isDialog && (
+                        <ModalCloseButton onClick={() => setIsOpen(false)} />
+                    )}
                     {children}
                 </div>
             </div>}

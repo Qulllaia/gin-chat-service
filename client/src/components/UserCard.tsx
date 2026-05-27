@@ -1,33 +1,53 @@
 import { User } from "../types";
 import '../styles/UserCard.css'
+
 interface UserCardProps {
     user: User
-    createChatHandler: (user_id: number) =>  Promise<void>
-    handleCheckboxChange: (value: number) => void,
-    checkboxAvaible: boolean,
+    createChatHandler: (user_id: number) => Promise<void>
+    handleCheckboxChange: (value: number) => void
+    checkboxAvaible: boolean
+    isSelected?: boolean
 }
 
-export function UserCard({user, createChatHandler, handleCheckboxChange, checkboxAvaible}: UserCardProps) {
+export function UserCard({
+    user,
+    createChatHandler,
+    handleCheckboxChange,
+    checkboxAvaible,
+    isSelected = false,
+}: UserCardProps) {
+    const checkboxId = `group-user-${user.id}`;
+
+    const handleRowClick = () => {
+        if (checkboxAvaible) {
+            handleCheckboxChange(user.id);
+        } else {
+            void createChatHandler(user.id);
+        }
+    };
+
     return (
-        <div key={user.id} className="user-card"
-            onClick={()=> checkboxAvaible ? null : createChatHandler(user.id)}
+        <div
+            className={`user-card${checkboxAvaible && isSelected ? ' user-card--selected' : ''}`}
+            onClick={handleRowClick}
+            role={checkboxAvaible ? 'checkbox' : undefined}
+            aria-checked={checkboxAvaible ? isSelected : undefined}
         >
-            <p className="user-p">{user.name}</p>
-            {
-                checkboxAvaible &&  
-                <div className="checkbox">  
-                    <input 
-                        className="form-check-input m-3" 
-                        type="checkbox" 
-                        value="" 
-                        id="flexCheckDefault" 
-                        onChange={
-                            ()=> checkboxAvaible ? handleCheckboxChange(user.id) : null
-                        }
-                    ></input>
-                    <label className="form-check-label" htmlFor="flexCheckDefault"></label>
+            {checkboxAvaible && (
+                <div
+                    className="checkbox"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <input
+                        className="user-card-checkbox"
+                        type="checkbox"
+                        id={checkboxId}
+                        checked={isSelected}
+                        onChange={() => handleCheckboxChange(user.id)}
+                    />
                 </div>
-            }
+            )}
+            <p className="user-p">{user.name}</p>
         </div>
     )
 }

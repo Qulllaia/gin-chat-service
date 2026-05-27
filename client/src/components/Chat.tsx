@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
-import { Chat, MESSAGE, Message, NEW_CHAT, NEW_MULTIPLE_CHAT } from '../types';
+import { Chat, ChatMember, MESSAGE, Message, NEW_CHAT, NEW_MULTIPLE_CHAT } from '../types';
 import { ChatsList } from './ChatsList';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { ParentForm } from './ParentForm';
 import ChunkedAudioPlayer from './ChunkedAudioPlayer';
+import '../styles/Chat.css';
 
 interface PreviewItem {
   id: string;
@@ -27,10 +28,38 @@ export function ChatPage() {
   const [isCreatingNewChat, setIsCreatingNewChat] = useState<boolean>(false);
   const [chats, setChats] = useState<Chat[]>([])
   const [isBackgroundUpdateOpen, setIsBackgroundUpdateOpen] = useState<boolean>(false);
+  const [isMembersModalOpen, setIsMembersModalOpen] = useState<boolean>(false);
+  const [chatMembers, setChatMembers] = useState<ChatMember[]>([]);
+  const [membersLoading, setMembersLoading] = useState<boolean>(false);
+  const [membersError, setMembersError] = useState<string>('');
 
   const [previews, setPreviews] = useState<PreviewItem[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [usersOnline, setUsersOnline] = useState<number[]>([])
+
+  const resetChatBackgroundToDefault = () => {
+    const backgroundDiv = document.getElementById('background-div') as HTMLElement | null;
+    if (!backgroundDiv) return;
+
+    backgroundDiv.style.backgroundImage = 'none';
+    backgroundDiv.style.backgroundSize = '';
+    backgroundDiv.style.backgroundPosition = '';
+    backgroundDiv.style.backgroundRepeat = '';
+  };
+
+  const applyChatBackground = (backgroundUrl?: string | null) => {
+    const backgroundDiv = document.getElementById('background-div') as HTMLElement | null;
+    if (!backgroundDiv) return;
+
+    if (backgroundUrl) {
+      backgroundDiv.style.backgroundImage = `url(http://localhost:5050${backgroundUrl})`;
+      backgroundDiv.style.backgroundSize = 'cover';
+      backgroundDiv.style.backgroundPosition = 'center';
+      backgroundDiv.style.backgroundRepeat = 'no-repeat';
+    } else {
+      resetChatBackgroundToDefault();
+    }
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     if (!e.target.files) return;
@@ -181,11 +210,13 @@ export function ChatPage() {
           setMessages((prev) => [...prev, newMessage]);
       }
       else if (data.type === 'NEW_CHAT') {
+        resetChatBackgroundToDefault();
         setCurrentChatId(data.chat_id as number);
-        fetchChats()
+        fetchChats();
       }
       else if (data.type === "NEW_MULTIPLE_CHAT") {
-        fetchChats()
+        resetChatBackgroundToDefault();
+        fetchChats();
       }
       // TODO: Привести входные данные к общему формату
       else if (data.online) {
@@ -220,25 +251,23 @@ export function ChatPage() {
   }, [messages])
 
   useEffect(() => {
+    if (isCreatingNewChat || (currentChatId === 0 && currentUser !== 0) || currentChatId === 0) {
+      resetChatBackgroundToDefault();
+      return;
+    }
+
+    const activeChat = chats.find((chat) => chat.id === currentChatId);
+    applyChatBackground(activeChat?.backgroundUrl || null);
+  }, [currentChatId, chats, isCreatingNewChat, currentUser]);
+
+  useEffect(() => {
+    if (currentChatId === 0 || isCreatingNewChat) {
+      return;
+    }
+
     setMessages([]);
     fetchMEssagesHistory();
-    let backgroundUrl;
-    chats.forEach(chat => {
-      if (chat.id === currentChatId) {
-        backgroundUrl = chat.backgroundUrl;
-      }
-    })
-
-    const backgroundDiv = document.getElementById('background-div') as HTMLElement;
-    if (backgroundUrl) {
-      backgroundDiv.style.backgroundImage = `url(http://localhost:5050${backgroundUrl})`;
-      backgroundDiv.style.backgroundSize = 'cover';
-      backgroundDiv.style.backgroundPosition = 'center';
-      backgroundDiv.style.backgroundRepeat = 'no-repeat';
-      currentChatIdRef.current = currentChatId;
-    } else {
-      backgroundDiv.style.backgroundImage = ``;
-    }
+    currentChatIdRef.current = currentChatId;
   }, [currentChatId])
 
   const sendMessage = (text: string) => {
@@ -280,6 +309,42 @@ export function ChatPage() {
     }
   }
 
+  const getCurrentChat = (): Chat | undefined =>
+    chats.find((chat) => chat.id === currentChatId);
+
+  const isGroupChat = (): boolean => getCurrentChat()?.chatType === 'GROUPCHAT';
+
+  const openMembersModal = async () => {
+    if (currentChatId === 0 || isCreatingNewChat || !isGroupChat()) {
+      return;
+    }
+
+    setIsMembersModalOpen(true);
+    setMembersLoading(true);
+    setMembersError('');
+    setChatMembers([]);
+
+    try {
+      const res = await axios.get(`http://localhost:5050/api/chat/chats/${currentChatId}/members`, {
+        withCredentials: true,
+      });
+
+      if (res.data?.done && res.data.result) {
+        setChatMembers(res.data.result);
+      } else {
+        setMembersError('Не удалось загрузить участников');
+      }
+    } catch (e: any) {
+      if (e?.response?.status === 401) {
+        navigate('/auth', { replace: true });
+        return;
+      }
+      setMembersError('Не удалось загрузить участников');
+    } finally {
+      setMembersLoading(false);
+    }
+  };
+
   const isOnlineStatusVisible = (): boolean => {
     const data = chats.find((value: Chat, index: number, chats: Chat[]) => {
       if (value.id === currentChatId) {
@@ -294,8 +359,11 @@ export function ChatPage() {
     return false
   }
   return (
+    <div className="chat-page">
     <div className='chat-body'>
-      <ChunkedAudioPlayer ws={ws} />
+      <div className="chat-audio-hidden" aria-hidden="true">
+        <ChunkedAudioPlayer ws={ws} />
+      </div>
       <ChatsList
         setCurrentChatId={setCurrentChatId}
         currentChatId={currentChatId}
@@ -309,34 +377,99 @@ export function ChatPage() {
         sendMultipleChatCreationNotify={sendMultipleChatCreationNotify}
         usersOnline={usersOnline}
       />
-      <div className={currentChatId === 0 && currentUser === 0 ? "chat-container-hide" : "chat-container"} id='background-div'>
-        <div className='chat-header-panel'>
-          <div className="d-flex gap-4 align-items-center flex-wrap">
-            <div className="avatar-container">
-              <img className="avatar" />
-              {
-                isOnlineStatusVisible() ?
-                  <div className="status-indicator status-online"></div>
-                  :
-                  null
-              }
-            </div>
-          </div>
-          <h5>{chatHeader}</h5>
-          <button className="buttons-group d-grid gap-2" onClick={() => {
-            setIsBackgroundUpdateOpen(true);
-          }}>Изменить фон чата</button>
+      {currentChatId === 0 && currentUser === 0 ? (
+        <div className="chat-empty-placeholder">
+          Выберите чат из списка или создайте новый
         </div>
-        <ParentForm isDialog={true} setIsOpen={setIsBackgroundUpdateOpen} isOpen={isBackgroundUpdateOpen}>
+      ) : (
+      <div className="chat-container" id='background-div'>
+        <div className='chat-header-panel'>
+          <div className="avatar-container">
+            <img className="avatar" alt="" />
+            {isOnlineStatusVisible() && (
+              <div className="status-indicator status-online" />
+            )}
+          </div>
+          {isGroupChat() ? (
+            <button
+              type="button"
+              className="chat-header-title"
+              onClick={() => void openMembersModal()}
+              disabled={currentChatId === 0 || isCreatingNewChat}
+              title="Участники беседы"
+            >
+              {chatHeader}
+            </button>
+          ) : (
+            <h5 className="chat-header-title chat-header-title--static">{chatHeader}</h5>
+          )}
+          <button
+            type="button"
+            className="chat-btn"
+            onClick={() => setIsBackgroundUpdateOpen(true)}
+          >
+            Изменить фон
+          </button>
+        </div>
+        <ParentForm
+          isDialog={true}
+          setIsOpen={setIsMembersModalOpen}
+          isOpen={isMembersModalOpen}
+          backdropClassName="chat-modal-backdrop"
+          contentClassName="chat-modal-content"
+        >
+          <div className="chat-members-modal">
+            <h2 className="h3 mb-3 fw-normal">Участники беседы</h2>
+            <p className="chat-modal-hint">{chatHeader}</p>
+            {membersLoading && <div className="chat-members-loading">Загрузка...</div>}
+            {membersError && <div className="chat-members-error">{membersError}</div>}
+            {!membersLoading && !membersError && (
+              <ul className="chat-members-list">
+                {chatMembers.map((member) => (
+                  <li key={member.id} className="chat-member-item">
+                    <span className="chat-member-avatar" aria-hidden>
+                      {member.name.charAt(0).toUpperCase()}
+                    </span>
+                    <span className="chat-member-name">{member.name}</span>
+                    {usersOnline.includes(member.id) && (
+                      <span className="chat-member-badge">онлайн</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </ParentForm>
+        <ParentForm
+          isDialog={true}
+          setIsOpen={setIsBackgroundUpdateOpen}
+          isOpen={isBackgroundUpdateOpen}
+          backdropClassName="chat-modal-backdrop"
+          contentClassName="chat-modal-content"
+        >
           <div className='scroll-controller'>
             <h1 className="h3 mb-3 fw-normal">Вставьте картинку</h1>
-            <div className="form-floating">
-              <input type="file" className="form-control mb-2" id="floatingImage" placeholder="Password"
+            <div className="chat-file-upload">
+              <input
+                type="file"
+                id="floatingImage"
+                className="chat-file-upload-input"
                 ref={fileInputRef}
                 multiple
                 accept="image/*"
                 onChange={handleFileChange}
               />
+              <label htmlFor="floatingImage" className="chat-file-upload-label">
+                <span className="chat-file-upload-icon" aria-hidden>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </span>
+                <span className="chat-file-upload-title">
+                  {previews.length > 0 ? 'Выбрать другие файлы' : 'Нажмите или перетащите изображение'}
+                </span>
+                <span className="chat-file-upload-hint">PNG, JPG, WEBP</span>
+              </label>
             </div>
             <div className="image-upload">
               <div className="preview-grid">
@@ -353,7 +486,7 @@ export function ChatPage() {
                     </div>
                     <button
                       onClick={() => removePreview(preview.id)}
-                      className="buttons-group d-grid gap-2"
+                      className="chat-btn"
                       type="button"
                     >
                       Удалить
@@ -395,7 +528,7 @@ export function ChatPage() {
                             console.log(e);
                           });
                       }}
-                      className="buttons-group d-grid gap-2"
+                      className="chat-btn"
                       type="button"
                     >
                       Изменить фон
@@ -415,6 +548,8 @@ export function ChatPage() {
         <MessageList ref={messagesEndRef} messages={messages} />
         <MessageInput onSend={sendMessage} />
       </div>
+      )}
+    </div>
     </div>
   );
 }

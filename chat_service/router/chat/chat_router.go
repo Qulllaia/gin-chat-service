@@ -26,6 +26,8 @@ func (a *Chat) ChatRoutes(controller *controller.Controller) {
 		api.GET("/chats", middleware.ErrorMiddleware[[]dto.ChatListDTO](controller.Chat.GetUsersChats))
 		api.POST("/chats", middleware.ErrorMiddleware[*int64](controller.Chat.CreateChatWithMultipleUsers))
 		api.POST("/background", middleware.ErrorMiddleware[*types.ImageResponse](controller.Chat.SetBackGround))
+		api.DELETE("/chats/:id", middleware.ErrorMiddleware[bool](controller.Chat.DeleteChat))
+		api.GET("/chats/:id/members", middleware.ErrorMiddleware[[]dto.ChatMemberDTO](controller.Chat.GetChatMembers))
 	}
 }
 

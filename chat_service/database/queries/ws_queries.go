@@ -1,6 +1,8 @@
 package queries
 
 import (
+	"database/sql"
+	"errors"
 	"time"
 
 	"main/database"
@@ -53,12 +55,46 @@ func (wsq *WSQueries) InsertMessageIntoChatHistory(chat_id, user_id int, message
 	return err
 }
 
+func (wsq *WSQueries) FindPrivateChatBetweenUsers(userID1, userID2 int) (int, bool, error) {
+	var chatID int
+	err := wsq.DB.QueryRow(`
+		SELECT chat_id
+		FROM "Chat"
+		WHERE chat_type_id = 'PRIVATECHAT'
+		  AND $1 = ANY(users)
+		  AND $2 = ANY(users)
+		  AND cardinality(users) = 2
+		LIMIT 1
+	`, userID1, userID2).Scan(&chatID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return 0, false, nil
+		}
+		return 0, false, err
+	}
+	return chatID, true, nil
+}
+
 func (wsq *WSQueries) CreateChatWithMessage(user_ids ...int) (error, int) {
+	if len(user_ids) != 2 {
+		return errors.New("private chat requires exactly two users"), 0
+	}
+
+	if chatID, found, err := wsq.FindPrivateChatBetweenUsers(user_ids[0], user_ids[1]); err != nil {
+		return err, 0
+	} else if found {
+		return nil, chatID
+	}
+
+	return wsq.createPrivateChat(user_ids)
+}
+
+func (wsq *WSQueries) createPrivateChat(user_ids []int) (error, int) {
 	var chat_id int
 	userIDsArray := pq.Array(user_ids)
 	err := wsq.DB.QueryRow(
-		`INSERT INTO "Chat" (users, name, chat_type_id) 
-		VALUES($1, $2, $3) RETURNING chat_id`,
+		`INSERT INTO "Chat" (users, name, chat_type_id, chat_background) 
+		VALUES($1, $2, $3, NULL) RETURNING chat_id`,
 		userIDsArray, nil, "PRIVATECHAT",
 	).Scan(&chat_id)
 

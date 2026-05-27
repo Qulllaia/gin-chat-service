@@ -20,6 +20,11 @@ export interface User {
   name: string,
 }
 
+export interface ChatMember {
+  id: number;
+  name: string;
+}
+
 export const NEW_CHAT = 'NEW_CHAT'
 export const NEW_MULTIPLE_CHAT = 'NEW_MULTIPLE_CHAT'
 export const MESSAGE = 'MESSAGE'

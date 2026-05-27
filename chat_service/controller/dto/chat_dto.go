@@ -21,7 +21,12 @@ type UserIDURI struct {
 }
 
 type UsersIDList struct {
-	IDs       []int64 `json: "ids"`
-	GroupName string  `json: "GroupName"`
+	IDs       []int64 `json:"ids"`
+	GroupName string  `json:"GroupName"`
+}
+
+type ChatMemberDTO struct {
+	ID   int64  `json:"id"`
+	Name string `json:"name"`
 }
 
